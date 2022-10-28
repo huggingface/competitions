@@ -21,24 +21,43 @@ def fetch_leaderboard(private=False):
     for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
         with open(submission, "r") as f:
             submission_info = json.load(f)
-        submissions.append(submission_info)
-
+        print(config.EVAL_HIGHER_IS_BETTER)
+        if config.EVAL_HIGHER_IS_BETTER:
+            submission_info["submissions"].sort(
+                key=lambda x: x["private_score"] if private else x["public_score"], reverse=True
+            )
+        else:
+            submission_info["submissions"].sort(key=lambda x: x["private_score"] if private else x["public_score"])
+        # select only the best submission
+        submission_info["submissions"] = submission_info["submissions"][0]
+        temp_info = {
+            "id": submission_info["id"],
+            "name": submission_info["name"],
+            "submission_id": submission_info["submissions"]["submission_id"],
+            "submission_comment": submission_info["submissions"]["submission_comment"],
+            "status": submission_info["submissions"]["status"],
+            "selected": submission_info["submissions"]["selected"],
+            "public_score": submission_info["submissions"]["public_score"],
+            "private_score": submission_info["submissions"]["private_score"],
+            "submission_date": submission_info["submissions"]["date"],
+        }
+        submissions.append(temp_info)
     print(submissions)
 
-    data_dict = {
-        "Team Name": ["Team 1", "Team 2", "Team 3", "Team 4", "Team 5"],
-        "Score": [0.9, 0.8, 0.7, 0.6, 0.5],
-        "Rank": [1, 2, 3, 4, 5],
-        "Submission Time": [
-            "2021-01-01 00:00:00",
-            "2021-01-01 00:00:00",
-            "2021-01-01 00:00:00",
-            "2021-01-01 00:00:00",
-            "2021-01-01 00:00:00",
-        ],
-    }
-    lb = pd.DataFrame(data_dict)
-    st.table(lb)
+    df = pd.DataFrame(submissions)
+    # sort by public score and then by submission_date
+    df = df.sort_values(
+        by=["public_score", "submission_date"],
+        ascending=True if not config.EVAL_HIGHER_IS_BETTER else False,
+    )
+    df = df.reset_index(drop=True)
+    df["rank"] = df.index + 1
+
+    if private:
+        columns = ["rank", "name", "private_score", "submission_date"]
+    else:
+        columns = ["rank", "name", "public_score", "submission_date"]
+    st.table(df[columns])
 
 
 def app():

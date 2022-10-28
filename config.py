@@ -19,3 +19,4 @@ SUBMISSION_LIMIT = int(os.getenv("SUBMISSION_LIMIT"))
 SELECTION_LIMIT = int(os.getenv("SELECTION_LIMIT"))
 END_DATE = os.getenv("END_DATE")
 END_DATE = datetime.strptime(END_DATE, "%Y-%m-%d")
+EVAL_HIGHER_IS_BETTER = True if int(os.getenv("EVAL_HIGHER_IS_BETTER")) == 1 else False
