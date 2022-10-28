@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+from huggingface_hub.utils._errors import EntryNotFoundError
 
 import config
 import utils
@@ -13,7 +14,11 @@ SUBMISSION_TEXT = """You can select upto 2 submissions for private leaderboard.
 def get_subs(user_info, private=False):
     # get user submissions
     user_id = user_info["id"]
-    user_submissions = utils.fetch_submissions(user_id)
+    try:
+        user_submissions = utils.fetch_submissions(user_id)
+    except EntryNotFoundError:
+        st.error("No submissions found")
+        return
     submissions_df = pd.DataFrame(user_submissions)
     if not private:
         submissions_df = submissions_df.drop(columns=["private_score"])
@@ -24,7 +29,7 @@ def get_subs(user_info, private=False):
         submissions_df = submissions_df[
             ["date", "submission_id", "public_score", "private_score", "submission_comment", "selected", "status"]
         ]
-    return submissions_df
+    st.write(submissions_df)
 
 
 def app():
@@ -44,23 +49,12 @@ def app():
             st.error("Please verify your email on Hugging Face Hub")
             return
 
-        public_lb, private_lb = st.tabs(["Public", "Private"])
         current_date_time = datetime.now()
-        print(current_date_time)
-        print(config.END_DATE)
-        print(current_date_time >= config.END_DATE)
-        with public_lb:
-            st.header("Public Leaderboard")
-            submission_df = get_subs(user_info, private=False)
-            st.write(submission_df)
-
-        with private_lb:
-            if current_date_time >= config.END_DATE:
-                st.header("Private Leaderboard")
-                submission_df = get_subs(user_info, private=True)
-                st.write(submission_df)
-            else:
-                st.error("Private Leaderboard will be available after the competition ends")
+        private = False
+        if current_date_time >= config.END_DATE:
+            private = True
+            st.header("Your Submissions")
+            get_subs(user_info, private=private)
 
 
 if __name__ == "__main__":
