@@ -1,12 +1,30 @@
+import glob
+import json
+import os
 from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+from huggingface_hub import snapshot_download
 
 import config
 
 
 def fetch_leaderboard(private=False):
+    submissions_folder = snapshot_download(
+        repo_id=config.COMPETITION_ID,
+        allow_patterns="*.json",
+        use_auth_token=config.AUTOTRAIN_TOKEN,
+        repo_type="dataset",
+    )
+    submissions = []
+    for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
+        with open(submission, "r") as f:
+            submission_info = json.load(f)
+        submissions.append(submission_info)
+
+    print(submissions)
+
     data_dict = {
         "Team Name": ["Team 1", "Team 2", "Team 3", "Team 4", "Team 5"],
         "Score": [0.9, 0.8, 0.7, 0.6, 0.5],

@@ -7,8 +7,7 @@ from huggingface_hub.utils._errors import EntryNotFoundError
 import config
 import utils
 
-SUBMISSION_TEXT = """You can select upto 2 submissions for private leaderboard.
-"""
+SUBMISSION_TEXT = f"""You can select upto {config.SELECTION_LIMIT} submissions for private leaderboard."""
 
 
 def get_subs(user_info, private=False):
@@ -53,8 +52,7 @@ def app():
         private = False
         if current_date_time >= config.END_DATE:
             private = True
-            st.header("Your Submissions")
-            get_subs(user_info, private=private)
+        get_subs(user_info, private=private)
 
 
 if __name__ == "__main__":
