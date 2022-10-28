@@ -1,6 +1,8 @@
 import os
-from dotenv import load_dotenv
+from datetime import datetime
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 if Path(".env").is_file():
     load_dotenv(".env")
@@ -14,3 +16,6 @@ AUTOTRAIN_TOKEN = os.getenv("AUTOTRAIN_TOKEN")
 HF_ACCESS_TOKEN = os.getenv("HF_ACCESS_TOKEN")
 AUTOTRAIN_BACKEND_API = os.getenv("AUTOTRAIN_BACKEND_API")
 SUBMISSION_LIMIT = int(os.getenv("SUBMISSION_LIMIT"))
+SELECTION_LIMIT = int(os.getenv("SELECTION_LIMIT"))
+END_DATE = os.getenv("END_DATE")
+END_DATE = datetime.strptime(END_DATE, "%Y-%m-%d")

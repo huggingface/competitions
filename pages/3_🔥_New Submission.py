@@ -1,10 +1,10 @@
-import streamlit as st
-from huggingface_hub import HfApi, CommitOperationAdd
 import uuid
-import os
-import pandas as pd
-import utils
+
+import streamlit as st
+from huggingface_hub import HfApi
+
 import config
+import utils
 
 SUBMISSION_TEXT = """You can make upto 5 submissions per day.
 The test data has been divided into public and private splits.

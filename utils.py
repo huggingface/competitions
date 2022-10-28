@@ -1,11 +1,13 @@
-import time
-import requests
-import config
-from huggingface_hub import HfApi, hf_hub_download
-import json
 import datetime
 import io
+import json
+import time
+
+import requests
+from huggingface_hub import HfApi, hf_hub_download
 from huggingface_hub.utils._errors import EntryNotFoundError
+
+import config
 
 
 def get_auth_headers(token: str, prefix: str = "Bearer"):
@@ -199,12 +201,16 @@ def increment_submissions(user_id, submission_id, submission_comment):
     with open(user_fname, "r") as f:
         user_submission_info = json.load(f)
     todays_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    # here goes all the default stuff for submission
     user_submission_info["submissions"].append(
         {
             "date": todays_date,
             "submission_id": submission_id,
             "submission_comment": submission_comment,
             "status": "pending",
+            "selected": False,
+            "public_score": -1,
+            "private_score": -1,
         }
     )
     # count the number of times user has submitted today
