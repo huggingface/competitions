@@ -6,8 +6,11 @@ import time
 import requests
 from huggingface_hub import HfApi, hf_hub_download
 from huggingface_hub.utils._errors import EntryNotFoundError
-
+import os
+import glob
+import pandas as pd
 import config
+from huggingface_hub import snapshot_download
 
 
 def get_auth_headers(token: str, prefix: str = "Bearer"):
@@ -201,10 +204,12 @@ def increment_submissions(user_id, submission_id, submission_comment):
     with open(user_fname, "r") as f:
         user_submission_info = json.load(f)
     todays_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    current_time = datetime.datetime.now().strftime("%H:%M:%S")
     # here goes all the default stuff for submission
     user_submission_info["submissions"].append(
         {
             "date": todays_date,
+            "time": current_time,
             "submission_id": submission_id,
             "submission_comment": submission_comment,
             "status": "pending",
@@ -238,6 +243,7 @@ def verify_submission(bytes_data):
 
 
 def fetch_submissions(user_id):
+    print(config.COMPETITION_ID)
     user_fname = hf_hub_download(
         repo_id=config.COMPETITION_ID,
         filename=f"{user_id}.json",
@@ -247,3 +253,60 @@ def fetch_submissions(user_id):
     with open(user_fname, "r") as f:
         user_submission_info = json.load(f)
     return user_submission_info["submissions"]
+
+
+def fetch_leaderboard(private=False):
+    submissions_folder = snapshot_download(
+        repo_id=config.COMPETITION_ID,
+        allow_patterns="*.json",
+        use_auth_token=config.AUTOTRAIN_TOKEN,
+        repo_type="dataset",
+    )
+    submissions = []
+    for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
+        with open(submission, "r") as f:
+            submission_info = json.load(f)
+        print(config.EVAL_HIGHER_IS_BETTER)
+        if config.EVAL_HIGHER_IS_BETTER:
+            submission_info["submissions"].sort(
+                key=lambda x: x["private_score"] if private else x["public_score"], reverse=True
+            )
+        else:
+            submission_info["submissions"].sort(key=lambda x: x["private_score"] if private else x["public_score"])
+        # select only the best submission
+        submission_info["submissions"] = submission_info["submissions"][0]
+        temp_info = {
+            "id": submission_info["id"],
+            "name": submission_info["name"],
+            "submission_id": submission_info["submissions"]["submission_id"],
+            "submission_comment": submission_info["submissions"]["submission_comment"],
+            "status": submission_info["submissions"]["status"],
+            "selected": submission_info["submissions"]["selected"],
+            "public_score": submission_info["submissions"]["public_score"],
+            "private_score": submission_info["submissions"]["private_score"],
+            "submission_date": submission_info["submissions"]["date"],
+            "submission_time": submission_info["submissions"]["time"],
+        }
+        submissions.append(temp_info)
+    print(submissions)
+
+    df = pd.DataFrame(submissions)
+    # convert submission date and time to datetime
+    df["submission_datetime"] = pd.to_datetime(
+        df["submission_date"] + " " + df["submission_time"], format="%Y-%m-%d %H:%M:%S"
+    )
+    # sort by submission datetime
+    # sort by public score and submission datetime
+    if config.EVAL_HIGHER_IS_BETTER:
+        df = df.sort_values(by=["public_score", "submission_datetime"], ascending=[False, True])
+    else:
+        df = df.sort_values(by=["public_score", "submission_datetime"], ascending=[True, True])
+    # reset index
+    df = df.reset_index(drop=True)
+    df["rank"] = df.index + 1
+
+    if private:
+        columns = ["rank", "name", "private_score", "submission_datetime"]
+    else:
+        columns = ["rank", "name", "public_score", "submission_datetime"]
+    return df[columns]

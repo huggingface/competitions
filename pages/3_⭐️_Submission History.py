@@ -18,6 +18,7 @@ def get_subs(user_info, private=False):
     except EntryNotFoundError:
         st.error("No submissions found")
         return
+    print(user_submissions)
     submissions_df = pd.DataFrame(user_submissions)
     if not private:
         submissions_df = submissions_df.drop(columns=["private_score"])
