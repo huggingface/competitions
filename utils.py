@@ -64,7 +64,6 @@ def create_project(project_id, submission_dataset, model, dataset):
     project_json_resp = http_post(
         path="/projects/create", payload=payload, token=config.AUTOTRAIN_TOKEN, domain=config.AUTOTRAIN_BACKEND_API
     ).json()
-    print(project_json_resp)
     time.sleep(5)
     # Upload data
     payload = {
@@ -76,22 +75,20 @@ def create_project(project_id, submission_dataset, model, dataset):
         "dataset_split": project_config["dataset_split"],
     }
 
-    data_json_resp = http_post(
+    _ = http_post(
         path=f"/projects/{project_json_resp['id']}/data/dataset",
         payload=payload,
         token=config.AUTOTRAIN_TOKEN,
         domain=config.AUTOTRAIN_BACKEND_API,
     ).json()
-    print("💾💾💾 Dataset creation 💾💾💾")
-    print(data_json_resp)
+    print("💾💾💾 Dataset creation done 💾💾💾")
 
     # Process data
-    data_proc_json_resp = http_post(
+    _ = http_post(
         path=f"/projects/{project_json_resp['id']}/data/start_processing",
         token=config.AUTOTRAIN_TOKEN,
         domain=config.AUTOTRAIN_BACKEND_API,
     ).json()
-    print(f"🍪 Start data processing response: {data_proc_json_resp}")
 
     print("⏳ Waiting for data processing to complete ...")
     is_data_processing_success = False
@@ -108,12 +105,11 @@ def create_project(project_id, submission_dataset, model, dataset):
         time.sleep(10)
 
     # Approve training job
-    train_job_resp = http_post(
+    _ = http_post(
         path=f"/projects/{project_json_resp['id']}/start_training",
         token=config.AUTOTRAIN_TOKEN,
         domain=config.AUTOTRAIN_BACKEND_API,
     ).json()
-    print(f"🏃 Training job approval response: {train_job_resp}")
 
 
 def user_authentication(token):
@@ -243,7 +239,6 @@ def verify_submission(bytes_data):
 
 
 def fetch_submissions(user_id):
-    print(config.COMPETITION_ID)
     user_fname = hf_hub_download(
         repo_id=config.COMPETITION_ID,
         filename=f"{user_id}.json",
@@ -266,7 +261,6 @@ def fetch_leaderboard(private=False):
     for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
         with open(submission, "r") as f:
             submission_info = json.load(f)
-        print(config.EVAL_HIGHER_IS_BETTER)
         if config.EVAL_HIGHER_IS_BETTER:
             submission_info["submissions"].sort(
                 key=lambda x: x["private_score"] if private else x["public_score"], reverse=True
@@ -288,7 +282,6 @@ def fetch_leaderboard(private=False):
             "submission_time": submission_info["submissions"]["time"],
         }
         submissions.append(temp_info)
-    print(submissions)
 
     df = pd.DataFrame(submissions)
     # convert submission date and time to datetime

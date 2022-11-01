@@ -1,5 +1,5 @@
 ---
-title: Cats Vs Dogs
+title: Test Competition
 emoji: 🏢
 colorFrom: indigo
 colorTo: gray

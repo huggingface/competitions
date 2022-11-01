@@ -28,7 +28,6 @@ def app():
     if uploaded_file is not None and user_token != "":
         # verify token
         user_info = utils.user_authentication(token=user_token)
-        print(user_info)
         if "error" in user_info:
             st.error("Invalid token")
             return
