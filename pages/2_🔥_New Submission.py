@@ -78,7 +78,7 @@ def app():
                 utils.create_project(
                     project_id=submission_id,
                     submission_dataset=f"{config.COMPETITION_ID}",
-                    model="dummy",
+                    model="generic_competition",
                     dataset=user_id,
                 )
             st.success("Submission scheduled for evaluation")

@@ -57,6 +57,7 @@ def create_project(project_id, submission_dataset, model, dataset):
                 "dataset": dataset,
                 "model": model,
                 "submission_dataset": submission_dataset,
+                "create_prediction_repo": False,
             },
         },
     }
