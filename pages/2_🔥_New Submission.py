@@ -76,10 +76,10 @@ def app():
             with st.spinner("Scheuling submission for evaluation..."):
                 # schedule submission for evaluation
                 utils.create_project(
-                    project_id=submission_id,
-                    submission_dataset=f"{config.COMPETITION_ID}",
+                    project_id=f"{submission_id}",
+                    submission_dataset=user_id,
                     model="generic_competition",
-                    dataset=user_id,
+                    dataset=f"{config.COMPETITION_ID}",
                 )
             st.success("Submission scheduled for evaluation")
 
