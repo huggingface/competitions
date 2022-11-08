@@ -6,7 +6,7 @@ from huggingface_hub import HfApi
 import config
 import utils
 
-SUBMISSION_TEXT = """You can make upto 5 submissions per day.
+SUBMISSION_TEXT = f"""You can make upto {config.competition_info.submission_limit} submissions per day.
 The test data has been divided into public and private splits.
 Your score on the public split will be shown on the leaderboard.
 Your final score will be based on your private split performance.
@@ -23,7 +23,7 @@ def app():
     st.markdown(SUBMISSION_TEXT)
     uploaded_file = st.file_uploader("Choose a file")
     # user token
-    user_token = st.text_input("Enter your token", value="", type="password")
+    user_token = st.text_input("Enter your Hugging Face token", value="", type="password")
     user_token = user_token.strip()
     if uploaded_file is not None and user_token != "":
         # verify token
@@ -49,7 +49,7 @@ def app():
             # write a horizontal html line
             st.markdown("<hr/>", unsafe_allow_html=True)
         else:
-            with st.spinner("Uploading submission..."):
+            with st.spinner("Creating submission... Please wait"):
                 user_id = user_info["id"]
                 submission_id = str(uuid.uuid4())
                 file_extension = uploaded_file.name.split(".")[-1]
@@ -62,18 +62,12 @@ def app():
                     repo_type="dataset",
                     token=config.AUTOTRAIN_TOKEN,
                 )
-            with st.spinner("Creating submission..."):
                 # update submission limit
                 submissions_made = utils.increment_submissions(
                     user_id=user_id,
                     submission_id=submission_id,
                     submission_comment="",
                 )
-            st.success(
-                f"Upload successful! You have {config.SUBMISSION_LIMIT - submissions_made} submissions left for today."
-            )
-
-            with st.spinner("Scheuling submission for evaluation..."):
                 # schedule submission for evaluation
                 utils.create_project(
                     project_id=f"{submission_id}",
@@ -82,6 +76,7 @@ def app():
                     model="generic_competition",
                 )
             st.success("Submission scheduled for evaluation")
+            st.success(f"You have {config.SUBMISSION_LIMIT - submissions_made} submissions left for today.")
 
 
 if __name__ == "__main__":

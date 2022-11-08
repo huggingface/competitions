@@ -7,7 +7,8 @@ from huggingface_hub.utils._errors import EntryNotFoundError
 import config
 import utils
 
-SUBMISSION_TEXT = f"""You can select upto {config.SELECTION_LIMIT} submissions for private leaderboard."""
+SUBMISSION_TEXT = f"""You can select upto {config.competition_info.selection_limit}
+ submissions for private leaderboard."""
 
 
 def get_subs(user_info, private=False):
