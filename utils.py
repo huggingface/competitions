@@ -262,7 +262,7 @@ def fetch_leaderboard(private=False):
     for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
         with open(submission, "r") as f:
             submission_info = json.load(f)
-        if config.EVAL_HIGHER_IS_BETTER:
+        if config.competition_info.eval_higher_is_better:
             submission_info["submissions"].sort(
                 key=lambda x: x["private_score"] if private else x["public_score"], reverse=True
             )
@@ -291,7 +291,7 @@ def fetch_leaderboard(private=False):
     )
     # sort by submission datetime
     # sort by public score and submission datetime
-    if config.EVAL_HIGHER_IS_BETTER:
+    if config.competition_info.eval_higher_is_better:
         df = df.sort_values(by=["public_score", "submission_datetime"], ascending=[False, True])
     else:
         df = df.sort_values(by=["public_score", "submission_datetime"], ascending=[True, True])

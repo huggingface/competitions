@@ -11,7 +11,7 @@ def app():
     st.markdown("## Private Leaderboard")
     current_date_time = datetime.now()
 
-    if current_date_time >= config.END_DATE:
+    if current_date_time >= config.competition_info.end_date:
         st.header("Private Leaderboard")
         lb = utils.fetch_leaderboard(private=True)
         st.table(lb)

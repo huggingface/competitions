@@ -53,7 +53,7 @@ def app():
 
         current_date_time = datetime.now()
         private = False
-        if current_date_time >= config.END_DATE:
+        if current_date_time >= config.competition_info.end_date:
             private = True
         get_subs(user_info, private=private)
 

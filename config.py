@@ -23,7 +23,7 @@ class CompetitionInfo:
         try:
             config_fname = hf_hub_download(
                 repo_id=COMPETITION_ID,
-                filename="config.json",
+                filename="conf",
                 use_auth_token=AUTOTRAIN_TOKEN,
                 repo_type="dataset",
             )
@@ -73,6 +73,10 @@ class CompetitionInfo:
     @property
     def submission_columns(self):
         return self.config["SUBMISSION_COLUMNS"].split(",")
+
+    @property
+    def dataset_description(self):
+        return self.config["DATASET_DESCRIPTION"]
 
 
 competition_info = CompetitionInfo()
