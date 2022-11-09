@@ -1,4 +1,5 @@
 import streamlit as st
+import config
 
 
 def app():
@@ -6,9 +7,7 @@ def app():
 
     st.markdown("# Dataset")
     # st.sidebar.header("Dataset")
-    st.write(
-        """The dataset used for this competition can be found here: https://huggingface.co/datasets/cats_vs_dogs"""
-    )
+    st.write(f"""{config.competition_info.dataset_description}""")
 
 
 if __name__ == "__main__":
