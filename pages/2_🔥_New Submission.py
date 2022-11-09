@@ -78,7 +78,9 @@ def app():
                     model="generic_competition",
                 )
             st.success("Submission scheduled for evaluation")
-            st.success(f"You have {config.SUBMISSION_LIMIT - submissions_made} submissions left for today.")
+            st.success(
+                f"You have {config.competition_info.submission_limit - submissions_made} submissions left for today."
+            )
 
 
 if __name__ == "__main__":
