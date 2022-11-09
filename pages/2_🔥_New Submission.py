@@ -25,7 +25,9 @@ def app():
     # user token
     user_token = st.text_input("Enter your Hugging Face token", value="", type="password")
     user_token = user_token.strip()
-    if uploaded_file is not None and user_token != "":
+    # add submit button
+    submit_button = st.button("Submit")
+    if uploaded_file is not None and user_token != "" and submit_button:
         # verify token
         user_info = utils.user_authentication(token=user_token)
         if "error" in user_info:

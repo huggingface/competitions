@@ -37,9 +37,11 @@ def app():
     st.write("## Your Submissions")
     st.markdown(SUBMISSION_TEXT)
     # user token
-    user_token = st.text_input("Enter your token", value="", type="password")
+    user_token = st.text_input("Enter your Hugging Face token", value="", type="password")
     user_token = user_token.strip()
-    if user_token != "":
+    # add submit button
+    submit_button = st.button("Submit")
+    if user_token != "" and submit_button:
         user_info = utils.user_authentication(token=user_token)
         if "error" in user_info:
             st.error("Invalid token")
