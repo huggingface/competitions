@@ -1,7 +1,10 @@
 import uuid
+from datetime import datetime
 
+import pandas as pd
 import streamlit as st
 from huggingface_hub import HfApi
+from huggingface_hub.utils._errors import EntryNotFoundError
 
 import config
 import utils
@@ -16,16 +19,35 @@ The final rankings will be based on the private split performance.
 SUBMISSION_ERROR = """Submission is not in a proper format.
 Please check evaluation instructions for more details."""
 
+SUBMISSION_LIMIT_TEXT = f"""You can select upto {config.competition_info.selection_limit}
+ submissions for private leaderboard."""
 
-def app():
-    st.set_page_config(page_title="New Submissions", page_icon="🤗")
+
+def get_subs(user_info, private=False):
+    # get user submissions
+    user_id = user_info["id"]
+    try:
+        user_submissions = utils.fetch_submissions(user_id)
+    except EntryNotFoundError:
+        st.error("No submissions found")
+        return
+    submissions_df = pd.DataFrame(user_submissions)
+    if not private:
+        submissions_df = submissions_df.drop(columns=["private_score"])
+        submissions_df = submissions_df[
+            ["date", "submission_id", "public_score", "submission_comment", "selected", "status"]
+        ]
+    else:
+        submissions_df = submissions_df[
+            ["date", "submission_id", "public_score", "private_score", "submission_comment", "selected", "status"]
+        ]
+    st.write(submissions_df)
+
+
+def new_submission(user_token):
     st.write("## New Submission")
     st.markdown(SUBMISSION_TEXT)
     uploaded_file = st.file_uploader("Choose a file")
-    # user token
-    user_token = st.text_input("Enter your Hugging Face token", value="", type="password")
-    user_token = user_token.strip()
-    # add submit button
     submit_button = st.button("Submit")
     if uploaded_file is not None and user_token != "" and submit_button:
         # verify token
@@ -81,6 +103,40 @@ def app():
             st.success(
                 f"You have {config.competition_info.submission_limit - submissions_made} submissions left for today."
             )
+
+
+def my_submissions(user_token):
+    st.write("## Your Submissions")
+    st.markdown(SUBMISSION_LIMIT_TEXT)
+    if user_token != "":
+        user_info = utils.user_authentication(token=user_token)
+        if "error" in user_info:
+            st.error("Invalid token")
+            return
+
+        if user_info["emailVerified"] is False:
+            st.error("Please verify your email on Hugging Face Hub")
+            return
+
+        current_date_time = datetime.now()
+        private = False
+        if current_date_time >= config.competition_info.end_date:
+            private = True
+        get_subs(user_info, private=private)
+
+
+def app():
+    st.set_page_config(page_title="Submissions", page_icon="🤗")
+    st.markdown("## Submissions")
+    user_token = st.text_input("Enter your Hugging Face token", value="", type="password")
+    user_token = user_token.strip()
+    new_sub, my_sub = st.tabs(["New Submission", "My Submissions"])
+
+    with new_sub:
+        new_submission(user_token)
+
+    with my_sub:
+        my_submissions(user_token)
 
 
 if __name__ == "__main__":

@@ -14,3 +14,7 @@ st.markdown(
     {config.competition_info.competition_description}
 """
 )
+
+st.markdown("## Dataset")
+# st.sidebar.header("Dataset")
+st.write(f"""{config.competition_info.dataset_description}""")

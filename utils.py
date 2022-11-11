@@ -186,7 +186,7 @@ def check_user_submission_limit(user_info):
     for sub in user_submission_info["submissions"]:
         if sub["date"] == todays_date:
             todays_submissions += 1
-    if todays_submissions >= config.SUBMISSION_LIMIT:
+    if todays_submissions >= config.competition_info.submission_limit:
         return False
     return True
 
