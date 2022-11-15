@@ -1,5 +1,5 @@
 ---
-title: Shoes vs Boots vs Sandals
+title: my competition
 emoji: 🏢
 colorFrom: indigo
 colorTo: gray
