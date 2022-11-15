@@ -45,7 +45,6 @@ def get_subs(user_info, private=False):
 
 
 def new_submission(user_token):
-    st.write("## New Submission")
     st.markdown(SUBMISSION_TEXT)
     uploaded_file = st.file_uploader("Choose a file")
     submit_button = st.button("Submit")
@@ -106,7 +105,6 @@ def new_submission(user_token):
 
 
 def my_submissions(user_token):
-    st.write("## Your Submissions")
     st.markdown(SUBMISSION_LIMIT_TEXT)
     if user_token != "":
         user_info = utils.user_authentication(token=user_token)
@@ -128,6 +126,7 @@ def my_submissions(user_token):
 def app():
     st.set_page_config(page_title="Submissions", page_icon="🤗")
     st.markdown("## Submissions")
+    # enter token link to: https://huggingface.co/settings/tokens
     user_token = st.text_input("Enter your Hugging Face token", value="", type="password")
     user_token = user_token.strip()
     new_sub, my_sub = st.tabs(["New Submission", "My Submissions"])
