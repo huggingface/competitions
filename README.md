@@ -5,5 +5,5 @@ colorFrom: indigo
 colorTo: gray
 sdk: docker
 pinned: false
-app_port: 8501
+app_port: 7860
 ---
