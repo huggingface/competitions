@@ -151,8 +151,7 @@ with gr.Blocks() as demo:
         gr.Markdown(SUBMISSION_LIMIT_TEXT)
         user_token = gr.Textbox(max_lines=1)
         my_subs_button = gr.Button("Fetch Submissions")
-        mysubs = partial(my_submissions, user_token=user_token)
-        my_subs_button.click(mysubs)
+        my_subs_button.click(fn=my_submissions, inputs=user_token)
 
 if __name__ == "__main__":
     demo.launch()
