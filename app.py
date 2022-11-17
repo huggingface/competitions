@@ -31,8 +31,8 @@ def get_subs(user_info, private=False):
     try:
         user_submissions = utils.fetch_submissions(user_id)
     except EntryNotFoundError:
-        gr.Markdown("No submissions found")
-        return
+        return_value = "No submissions found"
+        return [gr.Textbox.update(visible=True, value=return_value), gr.DataFrame.update(visible=False)]
     submissions_df = pd.DataFrame(user_submissions)
     if not private:
         submissions_df = submissions_df.drop(columns=["private_score"])
@@ -43,25 +43,28 @@ def get_subs(user_info, private=False):
         submissions_df = submissions_df[
             ["date", "submission_id", "public_score", "private_score", "submission_comment", "selected", "status"]
         ]
-    gr.Markdown(submissions_df.to_markdown())
+    return [gr.Textbox.update(visible=False), gr.DataFrame.update(visible=True, value=submissions_df)]
 
 
 def my_submissions(user_token):
     if user_token != "":
         user_info = utils.user_authentication(token=user_token)
+        print(user_info)
         if "error" in user_info:
-            gr.Markdown("Invalid token")
-            return
+            return_value = "Invalid token"
+            return [gr.Textbox.update(visible=True, value=return_value), gr.DataFrame.update(visible=False)]
 
         if user_info["emailVerified"] is False:
-            gr.Markdown("Please verify your email on Hugging Face Hub")
-            return
+            return_value = "Please verify your email on Hugging Face Hub"
+            return [gr.Textbox.update(visible=True, value=return_value), gr.DataFrame.update(visible=False)]
 
         current_date_time = datetime.now()
         private = False
         if current_date_time >= config.competition_info.end_date:
             private = True
-        get_subs(user_info, private=private)
+        subs = get_subs(user_info, private=private)
+        return subs
+    return [gr.Textbox.update(visible=True, value="Invalid token"), gr.DataFrame.update(visible=False)]
 
 
 def new_submission(user_token):
@@ -149,9 +152,22 @@ with gr.Blocks() as demo:
         text_button = gr.Button("Flip")
     with gr.Tab("My Submissions"):
         gr.Markdown(SUBMISSION_LIMIT_TEXT)
-        user_token = gr.Textbox(max_lines=1)
+        user_token = gr.Textbox(max_lines=1, value="hf_XXX", label="Please enter your Hugging Face token")
+        output_text = gr.Textbox(visible=True, show_label=False)
+        empty_df = pd.DataFrame(
+            columns=[
+                "date",
+                "submission_id",
+                "public_score",
+                "private_score",
+                "submission_comment",
+                "selected",
+                "status",
+            ]
+        )
+        output_df = gr.Dataframe(visible=False, value=empty_df)
         my_subs_button = gr.Button("Fetch Submissions")
-        my_subs_button.click(fn=my_submissions, inputs=user_token)
+        my_subs_button.click(fn=my_submissions, inputs=[user_token], outputs=[output_text, output_df])
 
 if __name__ == "__main__":
     demo.launch()
