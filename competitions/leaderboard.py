@@ -2,6 +2,7 @@ import glob
 import json
 import os
 from dataclasses import dataclass
+from datetime import datetime
 
 import pandas as pd
 from huggingface_hub import snapshot_download
@@ -9,7 +10,7 @@ from huggingface_hub import snapshot_download
 
 @dataclass
 class Leaderboard:
-    end_date: str
+    end_date: datetime
     eval_higher_is_better: bool
     competition_id: str
     autotrain_token: str

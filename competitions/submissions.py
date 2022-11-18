@@ -162,7 +162,7 @@ class Submissions:
         try:
             user_submissions = self._download_user_subs(user_id)
         except EntryNotFoundError:
-            return NoSubmissionError("No submissions found ")
+            raise NoSubmissionError("No submissions found ")
 
         submissions_df = pd.DataFrame(user_submissions)
         if not private:
@@ -175,10 +175,10 @@ class Submissions:
     def _get_user_info(self, user_token):
         user_info = user_authentication(token=user_token)
         if "error" in user_info:
-            return AuthenticationError("Invalid token")
+            raise AuthenticationError("Invalid token")
 
         if user_info["emailVerified"] is False:
-            return AuthenticationError("Please verify your email on Hugging Face Hub")
+            raise AuthenticationError("Please verify your email on Hugging Face Hub")
         return user_info
 
     def _create_autotrain_project(self, project_id, submission_dataset, model, dataset):
@@ -273,13 +273,13 @@ class Submissions:
 
         # check if user can submit to the competition
         if self._check_user_submission_limit(user_info) is False:
-            return SubmissionLimitError("Submission limit reached")
+            raise SubmissionLimitError("Submission limit reached")
 
         with open(uploaded_file.name, "rb") as f:
             bytes_data = f.read()
         # verify file is valid
         if not self._verify_submission(bytes_data):
-            return SubmissionError("Invalid submission file")
+            raise SubmissionError("Invalid submission file")
         else:
             user_id = user_info["id"]
             submission_id = str(uuid.uuid4())
