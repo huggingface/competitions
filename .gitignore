@@ -2,6 +2,7 @@
 .DS_Store
 .vscode/
 .vim/
+flagged/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

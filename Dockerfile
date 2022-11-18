@@ -1,5 +1,8 @@
 FROM python:3.8.9
 
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Europe/Paris
+
 RUN pip install pip==22.3.1
 
 WORKDIR /app
@@ -9,12 +12,22 @@ RUN chown -R 1000:1000 /app
 USER 1000
 ENV HOME=/app
 
+ENV PYTHONPATH=$HOME/app \
+    PYTHONUNBUFFERED=1 \
+    GRADIO_ALLOW_FLAGGING=never \
+    GRADIO_NUM_PORTS=1 \
+    GRADIO_SERVER_NAME=0.0.0.0 \
+    GRADIO_THEME=huggingface \
+    SYSTEM=spaces
+
+
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     && sh Miniconda3-latest-Linux-x86_64.sh -b -p /app/miniconda \
     && rm -f Miniconda3-latest-Linux-x86_64.sh
 ENV PATH /app/miniconda/bin:$PATH
 
 RUN conda create -p /app/env -y python=3.8
+
 
 SHELL ["conda", "run","--no-capture-output", "-p","/app/env", "/bin/bash", "-c"]
 
@@ -24,8 +37,4 @@ RUN pip install -r requirements.txt
 COPY --chown=1000:1000 *.py /app/
 COPY --chown=1000:1000 pages/ /app/pages/
 
-CMD streamlit run Overview.py \
-    --server.headless true \
-    --server.enableCORS false \
-    --server.enableXsrfProtection false \
-    --server.fileWatcherType none
+CMD python app.py
