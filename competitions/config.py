@@ -8,8 +8,8 @@ from huggingface_hub import hf_hub_download
 from huggingface_hub.utils._errors import EntryNotFoundError
 
 
-if Path(".env").is_file():
-    load_dotenv(".env")
+if Path("../.env").is_file():
+    load_dotenv("../.env")
 
 
 MOONLANDING_URL = os.getenv("MOONLANDING_URL")

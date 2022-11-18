@@ -31,10 +31,7 @@ RUN conda create -p /app/env -y python=3.8
 
 SHELL ["conda", "run","--no-capture-output", "-p","/app/env", "/bin/bash", "-c"]
 
-COPY --chown=1000:1000 requirements.txt /app/requirements.txt
-RUN pip install -r requirements.txt
+COPY --chown=1000:1000 . /app/
+RUN python setup.py install
 
-COPY --chown=1000:1000 *.py /app/
-COPY --chown=1000:1000 pages/ /app/pages/
-
-CMD python app.py
+CMD python -c "import competitions; print(competitions.__version__)"
