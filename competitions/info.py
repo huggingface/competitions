@@ -1,37 +1,29 @@
 import json
-import os
+from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
 
-from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download
 from huggingface_hub.utils._errors import EntryNotFoundError
+from loguru import logger
 
 
-if Path("../.env").is_file():
-    load_dotenv("../.env")
-
-
-MOONLANDING_URL = os.getenv("MOONLANDING_URL")
-COMPETITION_ID = os.getenv("COMPETITION_ID")
-AUTOTRAIN_USERNAME = os.getenv("AUTOTRAIN_USERNAME")
-AUTOTRAIN_TOKEN = os.getenv("AUTOTRAIN_TOKEN")
-AUTOTRAIN_BACKEND_API = os.getenv("AUTOTRAIN_BACKEND_API")
-
-
+@dataclass
 class CompetitionInfo:
-    def __init__(self):
+    competition_id: str
+    autotrain_token: str
+
+    def __post_init__(self):
         try:
             config_fname = hf_hub_download(
-                repo_id=COMPETITION_ID,
+                repo_id=self.competition_id,
                 filename="conf",
-                use_auth_token=AUTOTRAIN_TOKEN,
+                use_auth_token=self.autotrain_token,
                 repo_type="dataset",
             )
         except EntryNotFoundError:
             raise Exception("Competition config not found. Please check the competition id.")
         except Exception as e:
-            print(e)
+            logger.error(e)
             raise Exception("Hugging Face Hub is unreachable, please try again later.")
 
         self.config = self.load_config(config_fname)
@@ -78,6 +70,3 @@ class CompetitionInfo:
     @property
     def dataset_description(self):
         return self.config["DATASET_DESCRIPTION"]
-
-
-competition_info = CompetitionInfo()

@@ -44,6 +44,7 @@ setup(
     url="https://github.com/huggingface/competitions",
     download_url="https://github.com/huggingface/competitions/tags",
     packages=find_packages("."),
+    entry_points={"console_scripts": ["competitions=competitions.cli.competitions:main"]},
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     python_requires=">=3.8",
