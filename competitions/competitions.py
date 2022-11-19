@@ -25,7 +25,6 @@ submissions = Submissions(
     autotrain_backend_api=AUTOTRAIN_BACKEND_API,
 )
 
-
 with gr.Blocks() as demo:
     with gr.Tabs() as tab_container:
         with gr.TabItem("Overview", id="overview"):
@@ -34,16 +33,16 @@ with gr.Blocks() as demo:
             gr.Markdown("## Dataset")
             gr.Markdown(f"{competition_info.dataset_description}")
         with gr.TabItem("Public Leaderboard", id="public_leaderboard") as public_leaderboard:
-            fetch_lb = gr.Button("Fetch Leaderboard")
-            output_markdown = gr.DataFrame()
-            fetch_lb_partial = partial(leaderboard.fetch, private=False)
-            fetch_lb.click(fn=fetch_lb_partial, outputs=[output_markdown])
+            # fetch_lb = gr.Button("Fetch Leaderboard")
+            output_df_public = gr.DataFrame()
+            # fetch_lb_partial = partial(leaderboard.fetch, private=False)
+            # fetch_lb.click(fn=fetch_lb_partial, outputs=[output_df])
         with gr.TabItem("Private Leaderboard", id="private_leaderboard"):
             current_date_time = datetime.now()
             if current_date_time >= competition_info.end_date:
-                output_markdown = gr.DataFrame()
+                output_df = gr.DataFrame()
                 fetch_lb_partial = partial(leaderboard.fetch, private=True)
-                fetch_lb_partial(outputs=[output_markdown])
+                fetch_lb_partial(outputs=[output_df])
             else:
                 gr.Markdown("Private Leaderboard will be available after the competition ends")
         with gr.TabItem("New Submission", id="new_submission"):
@@ -68,3 +67,6 @@ with gr.Blocks() as demo:
                 inputs=[user_token],
                 outputs=[output_text, output_df],
             )
+
+        fetch_lb_partial = partial(leaderboard.fetch, private=False)
+        public_leaderboard.select(fetch_lb_partial, inputs=[], outputs=[output_df_public])
