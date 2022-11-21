@@ -37,12 +37,10 @@ with gr.Blocks() as demo:
             output_df_public = gr.DataFrame()
             # fetch_lb_partial = partial(leaderboard.fetch, private=False)
             # fetch_lb.click(fn=fetch_lb_partial, outputs=[output_df])
-        with gr.TabItem("Private Leaderboard", id="private_leaderboard"):
+        with gr.TabItem("Private Leaderboard", id="private_leaderboard") as private_leaderboard:
             current_date_time = datetime.now()
             if current_date_time >= competition_info.end_date:
-                output_df = gr.DataFrame()
-                fetch_lb_partial = partial(leaderboard.fetch, private=True)
-                fetch_lb_partial(outputs=[output_df])
+                output_df_private = gr.DataFrame()
             else:
                 gr.Markdown("Private Leaderboard will be available after the competition ends")
         with gr.TabItem("New Submission", id="new_submission"):
@@ -70,3 +68,5 @@ with gr.Blocks() as demo:
 
         fetch_lb_partial = partial(leaderboard.fetch, private=False)
         public_leaderboard.select(fetch_lb_partial, inputs=[], outputs=[output_df_public])
+        fetch_lb_partial_private = partial(leaderboard.fetch, private=True)
+        private_leaderboard.select(fetch_lb_partial_private, inputs=[], outputs=[output_df_private])

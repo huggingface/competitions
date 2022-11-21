@@ -1,7 +1,4 @@
 import argparse
-import sys
-
-from loguru import logger
 
 from .. import __version__
 from .run import RunCompetitionsAppCommand
@@ -31,11 +28,11 @@ def main():
 
     command = args.func(args)
 
-    try:
-        command.run()
-    except Exception as e:
-        logger.error(e)
-        sys.exit(1)
+    # try:
+    command.run()
+    # except Exception as e:
+    #    logger.error(e)
+    #    sys.exit(1)
 
 
 if __name__ == "__main__":
