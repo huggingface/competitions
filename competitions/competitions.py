@@ -6,7 +6,7 @@ import gradio as gr
 from . import AUTOTRAIN_BACKEND_API, AUTOTRAIN_TOKEN, AUTOTRAIN_USERNAME, COMPETITION_ID, competition_info
 from .leaderboard import Leaderboard
 from .submissions import Submissions
-from .text import NO_SUBMISSIONS, SUBMISSION_LIMIT_TEXT, SUBMISSION_TEXT
+from .text import NO_SUBMISSIONS, SUBMISSION_SELECTION_TEXT, SUBMISSION_TEXT
 
 
 leaderboard = Leaderboard(
@@ -41,18 +41,15 @@ with gr.Blocks() as demo:
             gr.Markdown("## Dataset")
             gr.Markdown(f"{competition_info.dataset_description}")
         with gr.TabItem("Public Leaderboard", id="public_leaderboard") as public_leaderboard:
-            # fetch_lb = gr.Button("Fetch Leaderboard")
             output_df_public = gr.DataFrame()
-            # fetch_lb_partial = partial(leaderboard.fetch, private=False)
-            # fetch_lb.click(fn=fetch_lb_partial, outputs=[output_df])
         with gr.TabItem("Private Leaderboard", id="private_leaderboard") as private_leaderboard:
             current_date_time = datetime.now()
-            if current_date_time >= competition_info.end_date:
+            if current_date_time > competition_info.end_date:
                 output_df_private = gr.DataFrame()
             else:
                 gr.Markdown("Private Leaderboard will be available after the competition ends")
         with gr.TabItem("New Submission", id="new_submission"):
-            gr.Markdown(SUBMISSION_TEXT)
+            gr.Markdown(SUBMISSION_TEXT.format(competition_info.submission_limit))
             user_token = gr.Textbox(max_lines=1, value="hf_XXX", label="Please enter your Hugging Face token")
             uploaded_file = gr.File()
             output_text = gr.Markdown(visible=True, show_label=False)
@@ -63,7 +60,7 @@ with gr.Blocks() as demo:
                 outputs=[output_text],
             )
         with gr.TabItem("My Submissions", id="my_submissions"):
-            gr.Markdown(SUBMISSION_LIMIT_TEXT)
+            gr.Markdown(SUBMISSION_SELECTION_TEXT.format(competition_info.selection_limit))
             user_token = gr.Textbox(max_lines=1, value="hf_XXX", label="Please enter your Hugging Face token")
             output_text = gr.Markdown(visible=True, show_label=False)
             output_df = gr.DataFrame(visible=False)
@@ -76,5 +73,6 @@ with gr.Blocks() as demo:
 
         fetch_lb_partial = partial(leaderboard.fetch, private=False)
         public_leaderboard.select(fetch_lb_partial, inputs=[], outputs=[output_df_public])
-        fetch_lb_partial_private = partial(leaderboard.fetch, private=True)
-        private_leaderboard.select(fetch_lb_partial_private, inputs=[], outputs=[output_df_private])
+        if current_date_time > competition_info.end_date:
+            fetch_lb_partial_private = partial(leaderboard.fetch, private=True)
+            private_leaderboard.select(fetch_lb_partial_private, inputs=[], outputs=[output_df_private])

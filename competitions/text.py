@@ -8,6 +8,6 @@ The final rankings will be based on the private split performance.
 SUBMISSION_ERROR = """Submission is not in a proper format.
 Please check evaluation instructions for more details."""
 
-SUBMISSION_LIMIT_TEXT = """You can select upto {} submissions for private leaderboard."""
+SUBMISSION_SELECTION_TEXT = """You can select upto {} submissions for private leaderboard."""
 
 NO_SUBMISSIONS = """You have not made any submissions yet."""

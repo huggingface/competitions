@@ -20,6 +20,18 @@ class CompetitionInfo:
                 use_auth_token=self.autotrain_token,
                 repo_type="dataset",
             )
+            competition_desc = hf_hub_download(
+                repo_id=self.competition_id,
+                filename="COMPETITION_DESC.md",
+                use_auth_token=self.autotrain_token,
+                repo_type="dataset",
+            )
+            dataset_desc = hf_hub_download(
+                repo_id=self.competition_id,
+                filename="DATASET_DESC.md",
+                use_auth_token=self.autotrain_token,
+                repo_type="dataset",
+            )
         except EntryNotFoundError:
             raise Exception("Competition config not found. Please check the competition id.")
         except Exception as e:
@@ -27,6 +39,13 @@ class CompetitionInfo:
             raise Exception("Hugging Face Hub is unreachable, please try again later.")
 
         self.config = self.load_config(config_fname)
+        self.competition_desc = self.load_md(competition_desc)
+        self.dataset_desc = self.load_md(dataset_desc)
+
+    def load_md(self, md_path):
+        with open(md_path) as f:
+            md = f.read()
+        return md
 
     def load_config(self, config_path):
         with open(config_path) as f:
@@ -52,12 +71,8 @@ class CompetitionInfo:
         return True if int(hb) == 1 else False
 
     @property
-    def competition_dataset(self):
-        return self.config["DATASET"]
-
-    @property
     def competition_description(self):
-        return self.config["COMPETITION_DESCRIPTION"]
+        return self.competition_desc
 
     @property
     def competition_name(self):
@@ -69,4 +84,4 @@ class CompetitionInfo:
 
     @property
     def dataset_description(self):
-        return self.config["DATASET_DESCRIPTION"]
+        return self.dataset_desc
