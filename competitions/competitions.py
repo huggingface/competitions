@@ -6,7 +6,7 @@ import gradio as gr
 from . import AUTOTRAIN_BACKEND_API, AUTOTRAIN_TOKEN, AUTOTRAIN_USERNAME, COMPETITION_ID, competition_info
 from .leaderboard import Leaderboard
 from .submissions import Submissions
-from .text import SUBMISSION_LIMIT_TEXT, SUBMISSION_TEXT
+from .text import NO_SUBMISSIONS, SUBMISSION_LIMIT_TEXT, SUBMISSION_TEXT
 
 
 leaderboard = Leaderboard(
@@ -24,6 +24,14 @@ submissions = Submissions(
     autotrain_token=AUTOTRAIN_TOKEN,
     autotrain_backend_api=AUTOTRAIN_BACKEND_API,
 )
+
+
+def _my_submissions(user_token):
+    df = submissions.my_submissions(user_token)
+    if len(df) == 0:
+        return [gr.Markdown.update(visible=True, value=NO_SUBMISSIONS), gr.DataFrame.update(visible=False)]
+    return [gr.Markdown.update(visible=False), gr.DataFrame.update(visible=True, value=df)]
+
 
 with gr.Blocks() as demo:
     with gr.Tabs() as tab_container:
@@ -61,7 +69,7 @@ with gr.Blocks() as demo:
             output_df = gr.DataFrame(visible=False)
             my_subs_button = gr.Button("Fetch Submissions")
             my_subs_button.click(
-                fn=submissions.my_submissions,
+                fn=_my_submissions,
                 inputs=[user_token],
                 outputs=[output_text, output_df],
             )
