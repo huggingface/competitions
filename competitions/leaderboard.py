@@ -76,21 +76,40 @@ class Leaderboard:
         df["submission_datetime"] = pd.to_datetime(
             df["submission_date"] + " " + df["submission_time"], format="%Y-%m-%d %H:%M:%S"
         )
+        # only keep submissions before or on the end date
+        df = df[df["submission_datetime"] <= self.end_date].reset_index(drop=True)
+
         # convert datetime column to string
         df["submission_datetime"] = df["submission_datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
         # sort by submission datetime
         # sort by public score and submission datetime
         if self.eval_higher_is_better:
-            df = df.sort_values(
-                by=["public_score", "submission_datetime"],
-                ascending=[False, True],
-            )
+            if private:
+                df = df.sort_values(
+                    by=["private_score", "submission_datetime"],
+                    ascending=[False, True],
+                )
+            else:
+                df = df.sort_values(
+                    by=["public_score", "submission_datetime"],
+                    ascending=[False, True],
+                )
         else:
-            df = df.sort_values(
-                by=["public_score", "submission_datetime"],
-                ascending=[True, True],
-            )
+            if private:
+                df = df.sort_values(
+                    by=["private_score", "submission_datetime"],
+                    ascending=[True, True],
+                )
+            else:
+                df = df.sort_values(
+                    by=["public_score", "submission_datetime"],
+                    ascending=[True, True],
+                )
+
+        # only keep 4 significant digits in the score
+        df["public_score"] = df["public_score"].apply(lambda x: round(x, 4))
+        df["private_score"] = df["private_score"].apply(lambda x: round(x, 4))
 
         # reset index
         df = df.reset_index(drop=True)
