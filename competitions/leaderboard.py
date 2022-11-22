@@ -12,6 +12,7 @@ from huggingface_hub import snapshot_download
 class Leaderboard:
     end_date: datetime
     eval_higher_is_better: bool
+    max_selected_submissions: int
     competition_id: str
     autotrain_token: str
 
@@ -29,7 +30,7 @@ class Leaderboard:
             "submission_datetime",
         ]
 
-    def _download_submissions(self, private):
+    def _process_public_lb(self):
         submissions_folder = snapshot_download(
             repo_id=self.competition_id,
             allow_patterns="*.json",
@@ -40,14 +41,10 @@ class Leaderboard:
         for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
             with open(submission, "r") as f:
                 submission_info = json.load(f)
-            if self.eval_higher_is_better:
-                submission_info["submissions"].sort(
-                    key=lambda x: x["private_score"] if private else x["public_score"],
-                    reverse=True,
-                )
-            else:
-                submission_info["submissions"].sort(key=lambda x: x["private_score"] if private else x["public_score"])
-
+            submission_info["submissions"].sort(
+                key=lambda x: x["public_score"],
+                reverse=True if self.eval_higher_is_better else False,
+            )
             # select only the best submission
             submission_info["submissions"] = submission_info["submissions"][0]
             temp_info = {
@@ -58,15 +55,84 @@ class Leaderboard:
                 "status": submission_info["submissions"]["status"],
                 "selected": submission_info["submissions"]["selected"],
                 "public_score": submission_info["submissions"]["public_score"],
-                "private_score": submission_info["submissions"]["private_score"],
+                # "private_score": submission_info["submissions"]["private_score"],
                 "submission_date": submission_info["submissions"]["date"],
                 "submission_time": submission_info["submissions"]["time"],
             }
             submissions.append(temp_info)
         return submissions
 
+    def _process_private_lb(self):
+        submissions_folder = snapshot_download(
+            repo_id=self.competition_id,
+            allow_patterns="*.json",
+            use_auth_token=self.autotrain_token,
+            repo_type="dataset",
+        )
+        submissions = []
+        for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
+            with open(submission, "r") as f:
+                submission_info = json.load(f)
+                # count the number of submissions which are selected
+                selected_submissions = 0
+                for sub in submission_info["submissions"]:
+                    if sub["selected"]:
+                        selected_submissions += 1
+                if selected_submissions == 0:
+                    # select submissions with best public score
+                    submission_info["submissions"].sort(
+                        key=lambda x: x["public_score"],
+                        reverse=True if self.eval_higher_is_better else False,
+                    )
+                    # select only the best submission
+                    submission_info["submissions"] = submission_info["submissions"][0]
+                elif selected_submissions == self.max_selected_submissions:
+                    # select only the selected submissions
+                    submission_info["submissions"] = [sub for sub in submission_info["submissions"] if sub["selected"]]
+                    # sort by private score
+                    submission_info["submissions"].sort(
+                        key=lambda x: x["private_score"],
+                        reverse=True if self.eval_higher_is_better else False,
+                    )
+                    # select only the best submission
+                    submission_info["submissions"] = submission_info["submissions"][0]
+                else:
+                    temp_selected_submissions = [sub for sub in submission_info["submissions"] if sub["selected"]]
+                    temp_best_public_submissions = [
+                        sub for sub in submission_info["submissions"] if not sub["selected"]
+                    ]
+                    temp_best_public_submissions.sort(
+                        key=lambda x: x["public_score"],
+                        reverse=True if self.eval_higher_is_better else False,
+                    )
+                    missing_candidates = self.max_selected_submissions - temp_selected_submissions
+                    temp_best_public_submissions = temp_best_public_submissions[:missing_candidates]
+                    submission_info["submissions"] = temp_selected_submissions + temp_best_public_submissions
+                    submission_info["submissions"].sort(
+                        key=lambda x: x["private_score"],
+                        reverse=True if self.eval_higher_is_better else False,
+                    )
+                    submission_info["submissions"] = submission_info["submissions"][0]
+
+                temp_info = {
+                    "id": submission_info["id"],
+                    "name": submission_info["name"],
+                    "submission_id": submission_info["submissions"]["submission_id"],
+                    "submission_comment": submission_info["submissions"]["submission_comment"],
+                    "status": submission_info["submissions"]["status"],
+                    "selected": submission_info["submissions"]["selected"],
+                    "private_score": submission_info["submissions"]["private_score"],
+                    "submission_date": submission_info["submissions"]["date"],
+                    "submission_time": submission_info["submissions"]["time"],
+                }
+                submissions.append(temp_info)
+        return submissions
+
     def fetch(self, private=False):
-        submissions = self._download_submissions(private)
+        if private:
+            submissions = self._process_private_lb()
+        else:
+            submissions = self._process_public_lb()
 
         if len(submissions) == 0:
             return pd.DataFrame()
@@ -108,8 +174,10 @@ class Leaderboard:
                 )
 
         # only keep 4 significant digits in the score
-        df["public_score"] = df["public_score"].apply(lambda x: round(x, 4))
-        df["private_score"] = df["private_score"].apply(lambda x: round(x, 4))
+        if private:
+            df["private_score"] = df["private_score"].apply(lambda x: round(x, 4))
+        else:
+            df["public_score"] = df["public_score"].apply(lambda x: round(x, 4))
 
         # reset index
         df = df.reset_index(drop=True)

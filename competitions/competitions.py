@@ -12,6 +12,7 @@ from .text import NO_SUBMISSIONS, SUBMISSION_SELECTION_TEXT, SUBMISSION_TEXT
 leaderboard = Leaderboard(
     end_date=competition_info.end_date,
     eval_higher_is_better=competition_info.eval_higher_is_better,
+    max_selected_submissions=competition_info.selection_limit,
     competition_id=COMPETITION_ID,
     autotrain_token=AUTOTRAIN_TOKEN,
 )
@@ -29,8 +30,23 @@ submissions = Submissions(
 def _my_submissions(user_token):
     df = submissions.my_submissions(user_token)
     if len(df) == 0:
-        return [gr.Markdown.update(visible=True, value=NO_SUBMISSIONS), gr.DataFrame.update(visible=False)]
-    return [gr.Markdown.update(visible=False), gr.DataFrame.update(visible=True, value=df)]
+        return [
+            gr.Markdown.update(visible=True, value=NO_SUBMISSIONS),
+            gr.DataFrame.update(visible=False),
+            gr.TextArea.update(visible=False),
+        ]
+    selected_submission_ids = df[df["selected"] is True]["submission_id"].values.tolist()
+    if len(selected_submission_ids) > 0:
+        return [
+            gr.Markdown.update(visible=True),
+            gr.DataFrame.update(visible=True, data=df),
+            gr.TextArea.update(visible=False, value="\n".join(selected_submission_ids)),
+        ]
+    return [
+        gr.Markdown.update(visible=False),
+        gr.DataFrame.update(visible=True, value=df),
+        gr.TextArea.update(visible=True),
+    ]
 
 
 with gr.Blocks() as demo:
@@ -64,11 +80,12 @@ with gr.Blocks() as demo:
             user_token = gr.Textbox(max_lines=1, value="hf_XXX", label="Please enter your Hugging Face token")
             output_text = gr.Markdown(visible=True, show_label=False)
             output_df = gr.DataFrame(visible=False)
+            selected_submissions = gr.TextArea(visible=False, label="Selected Submissions")
             my_subs_button = gr.Button("Fetch Submissions")
             my_subs_button.click(
                 fn=_my_submissions,
                 inputs=[user_token],
-                outputs=[output_text, output_df],
+                outputs=[output_text, output_df, selected_submissions],
             )
 
         fetch_lb_partial = partial(leaderboard.fetch, private=False)
