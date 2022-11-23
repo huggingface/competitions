@@ -156,6 +156,38 @@ class Submissions:
             user_submission_info = json.load(f)
         return user_submission_info["submissions"]
 
+    def update_selected_submissions(self, user_token, selected_submission_ids):
+        user_info = self._get_user_info(user_token)
+        user_id = user_info["id"]
+
+        user_fname = hf_hub_download(
+            repo_id=self.competition_id,
+            filename=f"{user_id}.json",
+            use_auth_token=self.autotrain_token,
+            repo_type="dataset",
+        )
+        with open(user_fname, "r") as f:
+            user_submission_info = json.load(f)
+
+        for sub in user_submission_info["submissions"]:
+            if sub["submission_id"] in selected_submission_ids:
+                sub["selected"] = True
+            else:
+                sub["selected"] = False
+
+        # convert user_submission_info to BufferedIOBase file object
+        user_submission_info_json = json.dumps(user_submission_info)
+        user_submission_info_json_bytes = user_submission_info_json.encode("utf-8")
+        user_submission_info_json_buffer = io.BytesIO(user_submission_info_json_bytes)
+        api = HfApi()
+        api.upload_file(
+            path_or_fileobj=user_submission_info_json_buffer,
+            path_in_repo=f"{user_id}.json",
+            repo_id=self.competition_id,
+            repo_type="dataset",
+            token=self.autotrain_token,
+        )
+
     def _get_user_subs(self, user_info, private=False):
         # get user submissions
         user_id = user_info["id"]

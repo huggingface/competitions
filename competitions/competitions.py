@@ -34,19 +34,33 @@ def _my_submissions(user_token):
             gr.Markdown.update(visible=True, value=NO_SUBMISSIONS),
             gr.DataFrame.update(visible=False),
             gr.TextArea.update(visible=False),
+            gr.Button.update(visible=False),
         ]
-    selected_submission_ids = df[df["selected"] is True]["submission_id"].values.tolist()
+    selected_submission_ids = df[df["selected"] == True]["submission_id"].values.tolist()
     if len(selected_submission_ids) > 0:
         return [
             gr.Markdown.update(visible=True),
-            gr.DataFrame.update(visible=True, data=df),
-            gr.TextArea.update(visible=False, value="\n".join(selected_submission_ids)),
+            gr.DataFrame.update(visible=True, value=df),
+            gr.TextArea.update(visible=True, value="\n".join(selected_submission_ids), interactive=True),
+            gr.Button.update(visible=True),
         ]
     return [
         gr.Markdown.update(visible=False),
         gr.DataFrame.update(visible=True, value=df),
-        gr.TextArea.update(visible=True),
+        gr.TextArea.update(visible=True, interactive=True),
+        gr.Button.update(visible=True),
     ]
+
+
+def _update_selected_submissions(user_token, submission_ids):
+    submission_ids = submission_ids.split("\n")
+    submission_ids = [sid.strip() for sid in submission_ids]
+    if len(submission_ids) > competition_info.selection_limit:
+        raise ValueError(
+            f"You can select only {competition_info.selection_limit} submissions. You selected {len(submission_ids)} submissions."
+        )
+    submissions.update_selected_submissions(user_token, submission_ids)
+    return _my_submissions(user_token)
 
 
 with gr.Blocks() as demo:
@@ -84,12 +98,23 @@ with gr.Blocks() as demo:
             )
             output_text = gr.Markdown(visible=True, show_label=False)
             output_df = gr.DataFrame(visible=False)
-            selected_submissions = gr.TextArea(visible=False, label="Selected Submissions")
+            selected_submissions = gr.TextArea(
+                visible=False,
+                label="Selected Submissions (one submission id per line)",
+                max_lines=competition_info.selection_limit,
+                lines=competition_info.selection_limit,
+            )
+            update_selected_submissions = gr.Button("Update Selected Submissions", visible=False)
             my_subs_button = gr.Button("Fetch Submissions")
             my_subs_button.click(
                 fn=_my_submissions,
                 inputs=[user_token],
-                outputs=[output_text, output_df, selected_submissions],
+                outputs=[output_text, output_df, selected_submissions, update_selected_submissions],
+            )
+            update_selected_submissions.click(
+                fn=_update_selected_submissions,
+                inputs=[user_token, selected_submissions],
+                outputs=[output_text, output_df, selected_submissions, update_selected_submissions],
             )
 
         fetch_lb_partial = partial(leaderboard.fetch, private=False)
