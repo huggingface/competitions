@@ -11,3 +11,7 @@ Please check evaluation instructions for more details."""
 SUBMISSION_SELECTION_TEXT = """You can select upto {} submissions for private leaderboard."""
 
 NO_SUBMISSIONS = """You have not made any submissions yet."""
+
+SUBMISSION_SUCCESS = """Submission successful! You have {} submissions remaining today."""
+
+SUBMISSION_LIMIT_REACHED = """You have reached your submission limit for today. Please try again tomorrow."""

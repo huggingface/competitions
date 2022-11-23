@@ -4,9 +4,16 @@ from functools import partial
 import gradio as gr
 
 from . import AUTOTRAIN_BACKEND_API, AUTOTRAIN_TOKEN, AUTOTRAIN_USERNAME, COMPETITION_ID, competition_info
+from .errors import SubmissionError, SubmissionLimitError
 from .leaderboard import Leaderboard
 from .submissions import Submissions
-from .text import NO_SUBMISSIONS, SUBMISSION_SELECTION_TEXT, SUBMISSION_TEXT
+from .text import (
+    NO_SUBMISSIONS,
+    SUBMISSION_LIMIT_REACHED,
+    SUBMISSION_SELECTION_TEXT,
+    SUBMISSION_SUCCESS,
+    SUBMISSION_TEXT,
+)
 
 
 leaderboard = Leaderboard(
@@ -25,6 +32,16 @@ submissions = Submissions(
     autotrain_token=AUTOTRAIN_TOKEN,
     autotrain_backend_api=AUTOTRAIN_BACKEND_API,
 )
+
+
+def _new_submission(user_token, submission_file):
+    try:
+        remaining_subs = submissions.new_submission(user_token, submission_file)
+        return SUBMISSION_SUCCESS.format(remaining_subs)
+    except SubmissionLimitError:
+        return SUBMISSION_LIMIT_REACHED
+    except SubmissionError:
+        return "Something went wrong. Please try again later."
 
 
 def _my_submissions(user_token):
@@ -55,6 +72,7 @@ def _my_submissions(user_token):
 def _update_selected_submissions(user_token, submission_ids):
     submission_ids = submission_ids.split("\n")
     submission_ids = [sid.strip() for sid in submission_ids]
+    submission_ids = [sid for sid in submission_ids if len(sid) > 0]
     if len(submission_ids) > competition_info.selection_limit:
         raise ValueError(
             f"You can select only {competition_info.selection_limit} submissions. You selected {len(submission_ids)} submissions."
@@ -81,20 +99,20 @@ with gr.Blocks() as demo:
         with gr.TabItem("New Submission", id="new_submission"):
             gr.Markdown(SUBMISSION_TEXT.format(competition_info.submission_limit))
             user_token = gr.Textbox(
-                max_lines=1, value="hf_XXX", label="Please enter your Hugging Face token", type="password"
+                max_lines=1, value="", label="Please enter your Hugging Face token", type="password"
             )
             uploaded_file = gr.File()
             output_text = gr.Markdown(visible=True, show_label=False)
             new_sub_button = gr.Button("Upload Submission")
             new_sub_button.click(
-                fn=submissions.new_submission,
+                fn=_new_submission,
                 inputs=[user_token, uploaded_file],
                 outputs=[output_text],
             )
         with gr.TabItem("My Submissions", id="my_submissions"):
             gr.Markdown(SUBMISSION_SELECTION_TEXT.format(competition_info.selection_limit))
             user_token = gr.Textbox(
-                max_lines=1, value="hf_XXX", label="Please enter your Hugging Face token", type="password"
+                max_lines=1, value="", label="Please enter your Hugging Face token", type="password"
             )
             output_text = gr.Markdown(visible=True, show_label=False)
             output_df = gr.DataFrame(visible=False)

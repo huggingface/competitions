@@ -87,7 +87,7 @@ class Submissions:
         with open(user_fname, "r") as f:
             user_submission_info = json.load(f)
 
-        todays_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        todays_date = datetime.now().strftime("%Y-%m-%d")
         if len(user_submission_info["submissions"]) == 0:
             user_submission_info["submissions"] = []
 
