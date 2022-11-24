@@ -3,7 +3,7 @@ import os
 from .info import CompetitionInfo
 
 
-__version__ = "0.0.8"
+__version__ = "0.1.0"
 
 MOONLANDING_URL = os.getenv("MOONLANDING_URL")
 COMPETITION_ID = os.getenv("COMPETITION_ID")

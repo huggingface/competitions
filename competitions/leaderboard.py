@@ -1,11 +1,15 @@
 import glob
 import json
 import os
+import time
 from dataclasses import dataclass
 from datetime import datetime
 
 import pandas as pd
-from huggingface_hub import snapshot_download
+from loguru import logger
+
+# from huggingface_hub import snapshot_download
+from .download import snapshot_download
 
 
 @dataclass
@@ -31,12 +35,15 @@ class Leaderboard:
         ]
 
     def _process_public_lb(self):
+        start_time = time.time()
         submissions_folder = snapshot_download(
             repo_id=self.competition_id,
             allow_patterns="*.json",
             use_auth_token=self.autotrain_token,
             repo_type="dataset",
         )
+        logger.info(f"Downloaded submissions in {time.time() - start_time} seconds")
+        start_time = time.time()
         submissions = []
         for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
             with open(submission, "r") as f:
@@ -60,6 +67,7 @@ class Leaderboard:
                 "submission_time": submission_info["submissions"]["time"],
             }
             submissions.append(temp_info)
+        logger.info(f"Processed submissions in {time.time() - start_time} seconds")
         return submissions
 
     def _process_private_lb(self):

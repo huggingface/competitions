@@ -89,7 +89,7 @@ with gr.Blocks() as demo:
             gr.Markdown("## Dataset")
             gr.Markdown(f"{competition_info.dataset_description}")
         with gr.TabItem("Public Leaderboard", id="public_leaderboard") as public_leaderboard:
-            output_df_public = gr.DataFrame()
+            output_df_public = gr.DataFrame(row_count=(50, "fixed"), overflow_row_behaviour="paginate")
         with gr.TabItem("Private Leaderboard", id="private_leaderboard") as private_leaderboard:
             current_date_time = datetime.now()
             if current_date_time > competition_info.end_date:
