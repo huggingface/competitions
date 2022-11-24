@@ -81,6 +81,24 @@ def _update_selected_submissions(user_token, submission_ids):
     return _my_submissions(user_token)
 
 
+def _fetch_leaderboard(private):
+    if private:
+        current_date_time = datetime.now()
+        if current_date_time < competition_info.end_date:
+            return [
+                gr.DataFrame.update(visible=False),
+                gr.Markdown.update(
+                    visible=True, value="Private Leaderboard will be available after the competition ends"
+                ),
+            ]
+    df = leaderboard.fetch(private=private)
+    num_teams = len(df)
+    return [
+        gr.DataFrame.update(visible=True, value=df),
+        gr.Markdown.update(visible=True, value=f"Number of teams: {num_teams}"),
+    ]
+
+
 with gr.Blocks() as demo:
     with gr.Tabs() as tab_container:
         with gr.TabItem("Overview", id="overview"):
@@ -89,13 +107,15 @@ with gr.Blocks() as demo:
             gr.Markdown("## Dataset")
             gr.Markdown(f"{competition_info.dataset_description}")
         with gr.TabItem("Public Leaderboard", id="public_leaderboard") as public_leaderboard:
-            output_df_public = gr.DataFrame(row_count=(50, "fixed"), overflow_row_behaviour="paginate")
+            output_text_public = gr.Markdown()
+            output_df_public = gr.DataFrame(
+                row_count=(50, "dynamic"), overflow_row_behaviour="paginate", visible=False
+            )
         with gr.TabItem("Private Leaderboard", id="private_leaderboard") as private_leaderboard:
-            current_date_time = datetime.now()
-            if current_date_time > competition_info.end_date:
-                output_df_private = gr.DataFrame()
-            else:
-                gr.Markdown("Private Leaderboard will be available after the competition ends")
+            output_text_private = gr.Markdown()
+            output_df_private = gr.DataFrame(
+                row_count=(50, "dynamic"), overflow_row_behaviour="paginate", visible=False
+            )
         with gr.TabItem("New Submission", id="new_submission"):
             gr.Markdown(SUBMISSION_TEXT.format(competition_info.submission_limit))
             user_token = gr.Textbox(
@@ -135,8 +155,9 @@ with gr.Blocks() as demo:
                 outputs=[output_text, output_df, selected_submissions, update_selected_submissions],
             )
 
-        fetch_lb_partial = partial(leaderboard.fetch, private=False)
-        public_leaderboard.select(fetch_lb_partial, inputs=[], outputs=[output_df_public])
-        if current_date_time > competition_info.end_date:
-            fetch_lb_partial_private = partial(leaderboard.fetch, private=True)
-            private_leaderboard.select(fetch_lb_partial_private, inputs=[], outputs=[output_df_private])
+        fetch_lb_partial = partial(_fetch_leaderboard, private=False)
+        public_leaderboard.select(fetch_lb_partial, inputs=[], outputs=[output_df_public, output_text_public])
+        fetch_lb_partial_private = partial(_fetch_leaderboard, private=True)
+        private_leaderboard.select(
+            fetch_lb_partial_private, inputs=[], outputs=[output_df_private, output_text_private]
+        )

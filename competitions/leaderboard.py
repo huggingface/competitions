@@ -71,12 +71,15 @@ class Leaderboard:
         return submissions
 
     def _process_private_lb(self):
+        start_time = time.time()
         submissions_folder = snapshot_download(
             repo_id=self.competition_id,
             allow_patterns="*.json",
             use_auth_token=self.autotrain_token,
             repo_type="dataset",
         )
+        logger.info(f"Downloaded submissions in {time.time() - start_time} seconds")
+        start_time = time.time()
         submissions = []
         for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
             with open(submission, "r") as f:
@@ -134,6 +137,7 @@ class Leaderboard:
                     "submission_time": submission_info["submissions"]["time"],
                 }
                 submissions.append(temp_info)
+        logger.info(f"Processed submissions in {time.time() - start_time} seconds")
         return submissions
 
     def fetch(self, private=False):
@@ -152,9 +156,6 @@ class Leaderboard:
         )
         # only keep submissions before or on the end date
         df = df[df["submission_datetime"] <= self.end_date].reset_index(drop=True)
-
-        # convert datetime column to string
-        df["submission_datetime"] = df["submission_datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
         # sort by submission datetime
         # sort by public score and submission datetime
@@ -190,6 +191,9 @@ class Leaderboard:
         # reset index
         df = df.reset_index(drop=True)
         df["rank"] = df.index + 1
+
+        # convert datetime column to string
+        df["submission_datetime"] = df["submission_datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
         columns = self.public_columns if not private else self.private_columns
         return df[columns]
