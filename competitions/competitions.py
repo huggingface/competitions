@@ -4,7 +4,7 @@ from functools import partial
 import gradio as gr
 
 from . import AUTOTRAIN_BACKEND_API, AUTOTRAIN_TOKEN, AUTOTRAIN_USERNAME, COMPETITION_ID, competition_info
-from .errors import SubmissionError, SubmissionLimitError
+from .errors import PastDeadlineError, SubmissionError, SubmissionLimitError
 from .leaderboard import Leaderboard
 from .submissions import Submissions
 from .text import (
@@ -77,7 +77,15 @@ def _update_selected_submissions(user_token, submission_ids):
         raise ValueError(
             f"You can select only {competition_info.selection_limit} submissions. You selected {len(submission_ids)} submissions."
         )
-    submissions.update_selected_submissions(user_token, submission_ids)
+    try:
+        submissions.update_selected_submissions(user_token, submission_ids)
+    except PastDeadlineError:
+        return [
+            gr.Markdown.update(visible=True, value="You can no longer select submissions after the deadline."),
+            gr.DataFrame.update(visible=False),
+            gr.TextArea.update(visible=False),
+            gr.Button.update(visible=False),
+        ]
     return _my_submissions(user_token)
 
 

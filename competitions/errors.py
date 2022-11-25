@@ -12,3 +12,7 @@ class SubmissionError(Exception):
 
 class SubmissionLimitError(Exception):
     pass
+
+
+class PastDeadlineError(Exception):
+    pass

@@ -50,6 +50,8 @@ class Leaderboard:
                 submission_info = json.load(f)
             # only select submissions that are done
             submission_info["submissions"] = [sub for sub in submission_info["submissions"] if sub["status"] == "done"]
+            if len(submission_info["submissions"]) == 0:
+                continue
             submission_info["submissions"].sort(
                 key=lambda x: x["public_score"],
                 reverse=True if self.eval_higher_is_better else False,
@@ -89,6 +91,8 @@ class Leaderboard:
                 submission_info["submissions"] = [
                     sub for sub in submission_info["submissions"] if sub["status"] == "done"
                 ]
+                if len(submission_info["submissions"]) == 0:
+                    continue
                 # count the number of submissions which are selected
                 selected_submissions = 0
                 for sub in submission_info["submissions"]:
@@ -121,7 +125,7 @@ class Leaderboard:
                         key=lambda x: x["public_score"],
                         reverse=True if self.eval_higher_is_better else False,
                     )
-                    missing_candidates = self.max_selected_submissions - temp_selected_submissions
+                    missing_candidates = self.max_selected_submissions - len(temp_selected_submissions)
                     temp_best_public_submissions = temp_best_public_submissions[:missing_candidates]
                     submission_info["submissions"] = temp_selected_submissions + temp_best_public_submissions
                     submission_info["submissions"].sort(

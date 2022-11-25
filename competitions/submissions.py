@@ -10,7 +10,7 @@ from huggingface_hub import HfApi, hf_hub_download
 from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
 
-from .errors import AuthenticationError, NoSubmissionError, SubmissionError, SubmissionLimitError
+from .errors import AuthenticationError, NoSubmissionError, PastDeadlineError, SubmissionError, SubmissionLimitError
 from .utils import http_get, http_post, user_authentication
 
 
@@ -157,6 +157,10 @@ class Submissions:
         return user_submission_info["submissions"]
 
     def update_selected_submissions(self, user_token, selected_submission_ids):
+        current_datetime = datetime.now()
+        if current_datetime > self.end_date:
+            raise PastDeadlineError("Competition has ended.")
+
         user_info = self._get_user_info(user_token)
         user_id = user_info["id"]
 
