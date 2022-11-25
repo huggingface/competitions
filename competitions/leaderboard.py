@@ -48,6 +48,8 @@ class Leaderboard:
         for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
             with open(submission, "r") as f:
                 submission_info = json.load(f)
+            # only select submissions that are done
+            submission_info["submissions"] = [sub for sub in submission_info["submissions"] if sub["status"] == "done"]
             submission_info["submissions"].sort(
                 key=lambda x: x["public_score"],
                 reverse=True if self.eval_higher_is_better else False,
@@ -84,6 +86,9 @@ class Leaderboard:
         for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
             with open(submission, "r") as f:
                 submission_info = json.load(f)
+                submission_info["submissions"] = [
+                    sub for sub in submission_info["submissions"] if sub["status"] == "done"
+                ]
                 # count the number of submissions which are selected
                 selected_submissions = 0
                 for sub in submission_info["submissions"]:
