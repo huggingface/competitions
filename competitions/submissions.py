@@ -57,7 +57,7 @@ class Submissions:
 
         api.upload_file(
             path_or_fileobj=user_submission_info_json_buffer,
-            path_in_repo=f"{user_info['id']}.json",
+            path_in_repo=f"submission_info/{user_info['id']}.json",
             repo_id=self.competition_id,
             repo_type="dataset",
             token=self.autotrain_token,
@@ -68,7 +68,7 @@ class Submissions:
         try:
             user_fname = hf_hub_download(
                 repo_id=self.competition_id,
-                filename=f"{user_id}.json",
+                filename=f"submission_info/{user_id}.json",
                 use_auth_token=self.autotrain_token,
                 repo_type="dataset",
             )
@@ -76,7 +76,7 @@ class Submissions:
             self._add_new_user(user_info)
             user_fname = hf_hub_download(
                 repo_id=self.competition_id,
-                filename=f"{user_id}.json",
+                filename=f"submission_info/{user_id}.json",
                 use_auth_token=self.autotrain_token,
                 repo_type="dataset",
             )
@@ -103,7 +103,7 @@ class Submissions:
     def _increment_submissions(self, user_id, submission_id, submission_comment):
         user_fname = hf_hub_download(
             repo_id=self.competition_id,
-            filename=f"{user_id}.json",
+            filename=f"submission_info/{user_id}.json",
             use_auth_token=self.autotrain_token,
             repo_type="dataset",
         )
@@ -138,7 +138,7 @@ class Submissions:
         api = HfApi()
         api.upload_file(
             path_or_fileobj=user_submission_info_json_buffer,
-            path_in_repo=f"{user_id}.json",
+            path_in_repo=f"submission_info/{user_id}.json",
             repo_id=self.competition_id,
             repo_type="dataset",
             token=self.autotrain_token,
@@ -148,7 +148,7 @@ class Submissions:
     def _download_user_subs(self, user_id):
         user_fname = hf_hub_download(
             repo_id=self.competition_id,
-            filename=f"{user_id}.json",
+            filename=f"submission_info/{user_id}.json",
             use_auth_token=self.autotrain_token,
             repo_type="dataset",
         )
@@ -166,7 +166,7 @@ class Submissions:
 
         user_fname = hf_hub_download(
             repo_id=self.competition_id,
-            filename=f"{user_id}.json",
+            filename=f"submission_info/{user_id}.json",
             use_auth_token=self.autotrain_token,
             repo_type="dataset",
         )
@@ -186,7 +186,7 @@ class Submissions:
         api = HfApi()
         api.upload_file(
             path_or_fileobj=user_submission_info_json_buffer,
-            path_in_repo=f"{user_id}.json",
+            path_in_repo=f"submission_info/{user_id}.json",
             repo_id=self.competition_id,
             repo_type="dataset",
             token=self.autotrain_token,

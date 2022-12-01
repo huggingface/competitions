@@ -8,7 +8,6 @@ from datetime import datetime
 import pandas as pd
 from loguru import logger
 
-# from huggingface_hub import snapshot_download
 from .download import snapshot_download
 
 
@@ -38,14 +37,14 @@ class Leaderboard:
         start_time = time.time()
         submissions_folder = snapshot_download(
             repo_id=self.competition_id,
-            allow_patterns="*.json",
+            allow_patterns="submission_info/*.json",
             use_auth_token=self.autotrain_token,
             repo_type="dataset",
         )
         logger.info(f"Downloaded submissions in {time.time() - start_time} seconds")
         start_time = time.time()
         submissions = []
-        for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
+        for submission in glob.glob(os.path.join(submissions_folder, "submission_info", "*.json")):
             with open(submission, "r") as f:
                 submission_info = json.load(f)
             # only select submissions that are done
@@ -78,14 +77,14 @@ class Leaderboard:
         start_time = time.time()
         submissions_folder = snapshot_download(
             repo_id=self.competition_id,
-            allow_patterns="*.json",
+            allow_patterns="submission_info/*.json",
             use_auth_token=self.autotrain_token,
             repo_type="dataset",
         )
         logger.info(f"Downloaded submissions in {time.time() - start_time} seconds")
         start_time = time.time()
         submissions = []
-        for submission in glob.glob(os.path.join(submissions_folder, "*.json")):
+        for submission in glob.glob(os.path.join(submissions_folder, "submission_info", "*.json")):
             with open(submission, "r") as f:
                 submission_info = json.load(f)
                 submission_info["submissions"] = [

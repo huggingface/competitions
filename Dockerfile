@@ -33,5 +33,3 @@ SHELL ["conda", "run","--no-capture-output", "-p","/app/env", "/bin/bash", "-c"]
 
 COPY --chown=1000:1000 . /app/
 RUN python setup.py install
-
-CMD competitions run
