@@ -16,7 +16,7 @@ class CompetitionInfo:
         try:
             config_fname = hf_hub_download(
                 repo_id=self.competition_id,
-                filename="conf",
+                filename="conf.json",
                 use_auth_token=self.autotrain_token,
                 repo_type="dataset",
             )

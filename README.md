@@ -17,14 +17,14 @@ Create a competition checklist:
     ├── README.md
     ├── submission_info/
     ├── submissions/
-    ├── conf
+    ├── conf.json
     ├── solution.csv
     ├── COMPETITION_DESC.md
     ├── SUBMISSION_DESC.md
 
     ````
 
-- Example content for `conf`:
+- Example content for `conf.json`:
 
     ```
     {
