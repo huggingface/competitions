@@ -217,7 +217,7 @@ class Submissions:
             raise AuthenticationError("Please verify your email on Hugging Face Hub")
         return user_info
 
-    def _create_autotrain_project(self, project_id, submission_dataset, model, dataset):
+    def _create_autotrain_project(self, submission_id, competition_id, user_id, competition_type):
         project_config = {}
         project_config["dataset_name"] = "lewtun/imdb-dummy"
         project_config["dataset_config"] = "lewtun--imdb-dummy"
@@ -226,16 +226,16 @@ class Submissions:
 
         payload = {
             "username": self.autotrain_username,
-            "proj_name": project_id,
+            "proj_name": submission_id,
             "task": 1,
             "config": {
                 "language": "en",
                 "max_models": 5,
-                "benchmark": {
-                    "dataset": dataset,
-                    "model": model,
-                    "submission_dataset": submission_dataset,
-                    "create_prediction_repo": False,
+                "competition": {
+                    "submission_id": submission_id,
+                    "competition_id": competition_id,
+                    "user_id": user_id,
+                    "competition_type": "generic",
                 },
             },
         }
@@ -285,7 +285,7 @@ class Submissions:
             if project_status["status"] == 3:
                 is_data_processing_success = True
                 logger.info("✅ Data processing complete!")
-            time.sleep(5)
+            time.sleep(3)
 
         # Approve training job
         _ = http_post(
@@ -337,10 +337,10 @@ class Submissions:
             )
             # schedule submission for evaluation
             self._create_autotrain_project(
-                project_id=f"{submission_id}",
-                dataset=f"{self.competition_id}",
-                submission_dataset=user_id,
-                model="generic_competition",
+                submission_id=f"{submission_id}",
+                competition_id=f"{self.competition_id}",
+                user_id=user_id,
+                competition_type="generic",
             )
         remaining_submissions = self.submission_limit - submissions_made
         return remaining_submissions
