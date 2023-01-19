@@ -227,10 +227,10 @@ class Submissions:
         payload = {
             "username": self.autotrain_username,
             "proj_name": submission_id,
-            "task": 1,
+            "task": 26,
             "config": {
-                "language": "en",
-                "max_models": 5,
+                "language": "unk",
+                "max_models": 1,
                 "competition": {
                     "submission_id": submission_id,
                     "competition_id": competition_id,
