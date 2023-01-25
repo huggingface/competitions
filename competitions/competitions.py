@@ -127,7 +127,7 @@ with gr.Blocks() as demo:
         with gr.TabItem("New Submission", id="new_submission"):
             gr.Markdown(SUBMISSION_TEXT.format(competition_info.submission_limit))
             user_token = gr.Textbox(
-                max_lines=1, value="", label="Please enter your Hugging Face token", type="password"
+                max_lines=1, value="", label="Please enter your Hugging Face token (read only)", type="password"
             )
             uploaded_file = gr.File()
             output_text = gr.Markdown(visible=True, show_label=False)
@@ -140,7 +140,7 @@ with gr.Blocks() as demo:
         with gr.TabItem("My Submissions", id="my_submissions"):
             gr.Markdown(SUBMISSION_SELECTION_TEXT.format(competition_info.selection_limit))
             user_token = gr.Textbox(
-                max_lines=1, value="", label="Please enter your Hugging Face token", type="password"
+                max_lines=1, value="", label="Please enter your Hugging Face token (read only)", type="password"
             )
             output_text = gr.Markdown(visible=True, show_label=False)
             output_df = gr.DataFrame(visible=False)
