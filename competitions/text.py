@@ -3,12 +3,13 @@ The test data has been divided into public and private splits.
 Your score on the public split will be shown on the leaderboard.
 Your final score will be based on your private split performance.
 The final rankings will be based on the private split performance.
+You can find your Hugging Face token [here](https://huggingface.co/settings/token)
 """
 
 SUBMISSION_ERROR = """Submission is not in a proper format.
 Please check evaluation instructions for more details."""
 
-SUBMISSION_SELECTION_TEXT = """You can select upto {} submissions for private leaderboard."""
+SUBMISSION_SELECTION_TEXT = """You can select upto {} submissions for private leaderboard. You can find your Hugging Face token [here](https://huggingface.co/settings/token)"""
 
 NO_SUBMISSIONS = """You have not made any submissions yet."""
 
