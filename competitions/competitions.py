@@ -107,12 +107,11 @@ def _fetch_leaderboard(private):
     ]
 
 
-with gr.Blocks() as demo:
+with gr.Blocks(css=".tabitem {padding: 25px}") as demo:
     with gr.Tabs() as tab_container:
         with gr.TabItem("Overview", id="overview"):
-            gr.Markdown(f"# Welcome to {competition_info.competition_name}! 👋")
             gr.Markdown(f"{competition_info.competition_description}")
-            gr.Markdown("## Dataset")
+        with gr.TabItem("Dataset", id="dataset_tab") as dataset_tab:
             gr.Markdown(f"{competition_info.dataset_description}")
         with gr.TabItem("Public Leaderboard", id="public_leaderboard") as public_leaderboard:
             output_text_public = gr.Markdown()
