@@ -1,6 +1,7 @@
 import argparse
 
 from .. import __version__
+from .create import CreateCompetitionAppCommand
 from .run import RunCompetitionsAppCommand
 
 
@@ -15,6 +16,7 @@ def main():
 
     # Register commands
     RunCompetitionsAppCommand.register_subcommand(commands_parser)
+    CreateCompetitionAppCommand.register_subcommand(commands_parser)
 
     args = parser.parse_args()
 
