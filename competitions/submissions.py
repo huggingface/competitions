@@ -28,15 +28,16 @@ class Submissions:
             "date",
             "submission_id",
             "public_score",
-            "submission_comment",
+            # "submission_comment",
             "selected",
+            "status",
         ]
         self.private_sub_columns = [
             "date",
             "submission_id",
             "public_score",
             "private_score",
-            "submission_comment",
+            # "submission_comment",
             "selected",
             "status",
         ]
