@@ -1,4 +1,7 @@
+import uuid
+
 import gradio as gr
+import pandas as pd
 
 from .utils import user_authentication
 
@@ -19,6 +22,40 @@ To create a competition, follow these steps:
 """
 
 
+def create_competition(
+    user_token,
+    who_pays,
+    competition_type,
+    competition_name,
+    eval_metric,
+    submission_limit,
+    selection_limit,
+    end_date,
+    sample_submission_file,
+    solution_file,
+):
+    # generate a random id
+    suffix = str(uuid.uuid4())
+    private_dataset_name = f"{competition_name}{suffix}"
+    public_dataset_name = f"{competition_name}"
+    space_name = f"{competition_name}"
+
+    sample_submission_df = pd.read_csv(sample_submission_file, nrows=10)
+    submission_columns = ",".join(sample_submission_df.columns)
+
+    conf = {
+        "SUBMISSION_LIMIT": submission_limit,
+        "SELECTION_LIMIT": selection_limit,
+        "END_DATE": end_date,
+        "EVAL_HIGHER_IS_BETTER": True,
+        "COMPETITION_NAME": competition_name,
+        "SUBMISSION_COLUMNS": submission_columns,
+        "EVAL_METRIC": eval_metric,
+    }
+
+    pass
+
+
 def check_if_user_can_create_competition(user_token):
     """
     Check if the user can create a competition
@@ -26,17 +63,42 @@ def check_if_user_can_create_competition(user_token):
     :return: True if the user can create a competition, False otherwise
     """
     user_info = user_authentication(user_token)
-
+    print(user_info)
+    return_msg = None
     if "error" in user_info:
-        raise Exception("Invalid token. You can find your HF token here: https://huggingface.co/settings/tokens")
+        return_msg = "Invalid token. You can find your HF token here: https://huggingface.co/settings/tokens"
 
-    if user_info["auth"]["accessToken"]["role"] != "write":
-        raise Exception("Please provide a token with write access")
+    elif user_info["auth"]["accessToken"]["role"] != "write":
+        return_msg = "Please provide a token with write access"
 
-    if user_info["canPay"] is False:
-        raise Exception("Please add a valid payment method in order to create and manage a competition")
+    elif user_info["canPay"] is False:
+        return_msg = "Please add a valid payment method in order to create and manage a competition"
 
-    return [gr.Box.update(visible=True)]
+    if return_msg is not None:
+        return [
+            gr.Box.update(visible=False),
+            gr.Markdown.update(value=return_msg, visible=True),
+            gr.Dropdown.update(visible=False),
+        ]
+
+    username = user_info["name"]
+    user_id = user_info["id"]
+
+    orgs = user_info["orgs"]
+    valid_orgs = [org for org in orgs if org["canPay"] is True]
+    valid_orgs = [org for org in valid_orgs if org["roleInOrg"] in ("admin", "write")]
+
+    valid_entities = {org["id"]: org["name"] for org in valid_orgs}
+    valid_entities[user_id] = username
+
+    # reverse the dictionary
+    valid_entities = {v: k for k, v in valid_entities.items()}
+
+    return [
+        gr.Box.update(visible=True),
+        gr.Markdown.update(value="", visible=False),
+        gr.Dropdown.update(choices=list(valid_entities.keys()), visible=True, value=username),
+    ]
 
 
 with gr.Blocks() as demo:
@@ -52,18 +114,17 @@ with gr.Blocks() as demo:
         label="Please enter your Hugging Face token (write access needed)",
         type="password",
     )
-    org_name = gr.Textbox(
-        max_lines=1,
-        value="",
-        label="Please enter your username/organization name where the competition datasets will be hosted. Leave blank if you want to create a competition space in your personal account.",
-    )
-    with gr.Box():
-        gr.Markdown(
-            """
-            Pricing:
-            - Generic: $0.50 per submission
-            - Hub Model: Coming Soon!
-            """
+    login_button = gr.Button("Login")
+
+    message_box = gr.Markdown(visible=False)
+
+    with gr.Box(visible=False) as create_box:
+        who_pays = gr.Dropdown(
+            ["Me", "My Organization"],
+            label="Who Pays",
+            value="Me",
+            visible=False,
+            interactive=True,
         )
         competition_type = gr.Radio(
             ["Generic"],
@@ -71,37 +132,38 @@ with gr.Blocks() as demo:
             value="Generic",
         )
 
-    with gr.Box():
-        competition_name = gr.Textbox(
-            max_lines=1,
-            value="",
-            label="Competition Name",
-            placeholder="my-awesome-competition",
-        )
-        eval_metric = gr.Dropdown(
-            ["accuracy", "auc", "f1", "logloss", "precision", "recall"],
-            label="Evaluation Metric",
-            value="accuracy",
-        )
-        submission_limit = gr.Slider(
-            minimum=1,
-            maximum=100,
-            value=5,
-            step=1,
-            label="Submission Limit Per Day",
-        )
-        selection_limit = gr.Slider(
-            minimum=1,
-            maximum=100,
-            value=2,
-            step=1,
-            label="Selection Limit For Final Leaderboard",
-        )
-        end_date = gr.Textbox(
-            max_lines=1,
-            value="",
-            label="End Date (YYYY-MM-DD)",
-        )
+        with gr.Row():
+            competition_name = gr.Textbox(
+                max_lines=1,
+                value="",
+                label="Competition Name",
+                placeholder="my-awesome-competition",
+            )
+            eval_metric = gr.Dropdown(
+                ["accuracy", "auc", "f1", "logloss", "precision", "recall"],
+                label="Evaluation Metric",
+                value="accuracy",
+            )
+        with gr.Row():
+            submission_limit = gr.Slider(
+                minimum=1,
+                maximum=100,
+                value=5,
+                step=1,
+                label="Submission Limit Per Day",
+            )
+            selection_limit = gr.Slider(
+                minimum=1,
+                maximum=100,
+                value=2,
+                step=1,
+                label="Selection Limit For Final Leaderboard",
+            )
+            end_date = gr.Textbox(
+                max_lines=1,
+                value="",
+                label="End Date (YYYY-MM-DD)",
+            )
         with gr.Row():
             with gr.Column():
                 sample_submission_file = gr.File(
@@ -113,10 +175,30 @@ with gr.Blocks() as demo:
                 )
         gr.Markdown(
             """
-        Please note that you will need to upload training and test
+        <p style="text-align: center">
+        <h4>Please note that you will need to upload training and test
         data separately to the public repository that will be created.
-        You can also change sample_submission and solution files later.
+        You can also change sample_submission and solution files later.</h4>
+        </p>
         """
         )
         with gr.Row():
-            gr.Button("Create Competition")
+            create_button = gr.Button("Create Competition")
+
+    login_button.click(
+        check_if_user_can_create_competition, inputs=[user_token], outputs=[create_box, message_box, who_pays]
+    )
+
+    create_inputs = [
+        user_token,
+        who_pays,
+        competition_type,
+        competition_name,
+        eval_metric,
+        submission_limit,
+        selection_limit,
+        end_date,
+        sample_submission_file,
+        solution_file,
+    ]
+    create_button.click(create_competition, inputs=create_inputs, outputs=[message_box])
