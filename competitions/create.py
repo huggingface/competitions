@@ -10,20 +10,44 @@ from . import BOT_TOKEN
 from .utils import user_authentication
 
 
-"""
-To create a competition, follow these steps:
-1. create a private dataset which has the following structure:
-    - conf.json
-    - solution.csv
-    - COMPETITION_DESC.md
-    - DATASET_DESC.md
-2. create a public dataset which consists of the following files:
-    - sample_submission.csv
-    - test.csv
-    - train.csv
-    - anything else
-3. create a competition space
-"""
+def verify_sample_and_solution(sample_submission, solution):
+    sample_submission = pd.read_csv(sample_submission.name)
+    solution = pd.read_csv(solution.name)
+
+    # check if both contain an id column
+    if "id" not in sample_submission.columns:
+        raise Exception("Sample submission should contain an id column")
+
+    if "id" not in solution.columns:
+        raise Exception("Solution file should contain an id column")
+
+    # check if both files have the same ids
+    if not (sample_submission["id"] == solution["id"]).all():
+        raise Exception("Sample submission and solution should have the same ids")
+
+    # check if both files have the same number of rows
+    if sample_submission.shape[0] != solution.shape[0]:
+        raise Exception("Sample submission and solution should have the same number of rows")
+
+    # check if solution contains a split column
+    if "split" not in solution.columns:
+        raise Exception("Solution file should contain a split column")
+
+    # check if split column contains only two unique values
+    if len(solution["split"].unique()) != 2:
+        raise Exception("Split column should contain only two unique values: public and private")
+
+    # check if unique values are public and private
+    if not set(solution["split"].unique()) == set(["public", "private"]):
+        raise Exception("Split column should contain only two unique values: public and private")
+
+    # except the `split` column, all other columns should be the same
+    solution_columns = solution.columns.tolist()
+    solution_columns.remove("split")
+    if not (sample_submission.columns == solution_columns).all():
+        raise Exception("Sample submission and solution should have the same columns, except for the split column")
+
+    return True
 
 
 def create_competition(
@@ -38,20 +62,56 @@ def create_competition(
     sample_submission_file,
     solution_file,
 ):
+
+    # verify sample submission and solution
+    try:
+        verify_sample_and_solution(sample_submission_file, solution_file)
+    except Exception as e:
+        return gr.Markdown.update(
+            value=f"""
+        <div style="text-align: center">
+            <h4>Invalid sample submission or solution file</h4>
+            <p>{e}</p>
+        </div>
+        """,
+            visible=True,
+        )
+
+    # check if end_date is valid format: YYYY-MM-DD and in the future
+    try:
+        if len(end_date.split("-")) != 3:
+            raise Exception("End date should be in the format YYYY-MM-DD")
+        end_date_pd = pd.to_datetime(end_date)
+        if end_date_pd == pd.NaT:
+            raise Exception("End date should be in the format YYYY-MM-DD")
+        if end_date_pd <= pd.to_datetime("today"):
+            raise Exception("End date should be in the future")
+    except Exception as e:
+        return gr.Markdown.update(
+            value=f"""
+        <div style="text-align: center">
+            <h4>Invalid end date</h4>
+            <p>{e}</p>
+        </div>
+        """,
+            visible=True,
+        )
+
     # generate a random id
     suffix = str(uuid.uuid4())
     private_dataset_name = f"{who_pays}/{competition_name}{suffix}"
     public_dataset_name = f"{who_pays}/{competition_name}"
     space_name = f"competitions/{competition_name}"
 
-    sample_submission_df = pd.read_csv(sample_submission_file.name, nrows=10)
+    sample_submission_df = pd.read_csv(sample_submission_file.name)
     submission_columns = ",".join(sample_submission_df.columns)
 
     conf = {
+        "COMPETITION_TYPE": competition_type,
         "SUBMISSION_LIMIT": submission_limit,
         "SELECTION_LIMIT": selection_limit,
         "END_DATE": end_date,
-        "EVAL_HIGHER_IS_BETTER": True,
+        "EVAL_HIGHER_IS_BETTER": 1 if eval_metric != "logloss" else 0,
         "COMPETITION_NAME": competition_name,
         "SUBMISSION_ID_COLUMN": "id",
         "SUBMISSION_COLUMNS": submission_columns,
@@ -62,13 +122,24 @@ def create_competition(
     api = HfApi()
 
     # create private dataset repo
-    create_repo(
-        repo_id=private_dataset_name,
-        repo_type="dataset",
-        private=True,
-        token=user_token,
-        exist_ok=False,
-    )
+    try:
+        create_repo(
+            repo_id=private_dataset_name,
+            repo_type="dataset",
+            private=True,
+            token=user_token,
+            exist_ok=False,
+        )
+    except Exception as e:
+        return gr.Markdown.update(
+            value=f"""
+        <div style="text-align: center">
+            <h4>Failed to create private dataset repo</h4>
+            <p>{e}</p>
+        </div>
+        """,
+            visible=True,
+        )
     competition_desc = f"""
     # Welcome to {competition_name}
 
@@ -123,39 +194,48 @@ def create_competition(
         token=user_token,
     )
 
-    if solution_file is not None:
-
-        with open(solution_file.name, "rb") as f:
-            solution_bytes_data = f.read()
-        # upload solution file
-        api.upload_file(
-            path_or_fileobj=solution_bytes_data,
-            path_in_repo="solution.csv",
-            repo_id=private_dataset_name,
-            repo_type="dataset",
-            token=user_token,
-        )
+    with open(solution_file.name, "rb") as f:
+        solution_bytes_data = f.read()
+    # upload solution file
+    api.upload_file(
+        path_or_fileobj=solution_bytes_data,
+        path_in_repo="solution.csv",
+        repo_id=private_dataset_name,
+        repo_type="dataset",
+        token=user_token,
+    )
 
     # create public dataset repo
-    create_repo(
-        repo_id=public_dataset_name,
-        repo_type="dataset",
-        private=False,
-        token=user_token,
-        exist_ok=False,
-    )
-    if sample_submission_file is not None:
-        # upload sample submission file
-        with open(sample_submission_file.name, "rb") as f:
-            sample_submission_bytes_data = f.read()
-
-        api.upload_file(
-            path_or_fileobj=sample_submission_bytes_data,
-            path_in_repo="sample_submission.csv",
+    try:
+        create_repo(
             repo_id=public_dataset_name,
             repo_type="dataset",
+            private=False,
             token=user_token,
+            exist_ok=False,
         )
+    except Exception as e:
+        return gr.Markdown.update(
+            value=f"""
+        <div style="text-align: center">
+            <h4>Failed to create public dataset repo</h4>
+            <p>{e}</p>
+        </div>
+        """,
+            visible=True,
+        )
+
+    # upload sample submission file
+    with open(sample_submission_file.name, "rb") as f:
+        sample_submission_bytes_data = f.read()
+
+    api.upload_file(
+        path_or_fileobj=sample_submission_bytes_data,
+        path_in_repo="sample_submission.csv",
+        repo_id=public_dataset_name,
+        repo_type="dataset",
+        token=user_token,
+    )
 
     dockerfile = """
     FROM huggingface/competitions:latest
@@ -198,7 +278,6 @@ def create_competition(
     """
     space_readme = space_readme.strip()
     space_readme = space_readme.replace("    ", "")
-    print(repr(space_readme))
 
     # upload space readme
     space_readme_bytes = space_readme.encode("utf-8")
@@ -231,6 +310,19 @@ def create_competition(
         token=BOT_TOKEN,
     )
 
+    return gr.Markdown.update(
+        value=f"""
+        <div style="text-align: center">
+            <h4>Competition created successfully!</h4>
+            <p>Private dataset: <a href="https://hf.co/datasets/{private_dataset_name}">{private_dataset_name}</a></p>
+            <p>Public dataset: <a href="https://hf.co/datasets/{public_dataset_name}">{public_dataset_name}</a></p>
+            <p>Competition space: <a href="https://hf.co/spaces/{space_name}">{space_name}</a></p>
+            <p>Note: Do NOT share the private dataset or link with anyone else.</p>
+        </div>
+        """,
+        visible=True,
+    )
+
 
 def check_if_user_can_create_competition(user_token):
     """
@@ -239,16 +331,12 @@ def check_if_user_can_create_competition(user_token):
     :return: True if the user can create a competition, False otherwise
     """
     user_info = user_authentication(user_token)
-    print(user_info)
     return_msg = None
     if "error" in user_info:
         return_msg = "Invalid token. You can find your HF token here: https://huggingface.co/settings/tokens"
 
     elif user_info["auth"]["accessToken"]["role"] != "write":
         return_msg = "Please provide a token with write access"
-
-    elif user_info["canPay"] is False:
-        return_msg = "Please add a valid payment method in order to create and manage a competition"
 
     if return_msg is not None:
         return [
@@ -257,23 +345,45 @@ def check_if_user_can_create_competition(user_token):
             gr.Dropdown.update(visible=False),
         ]
 
-    username = user_info["name"]
-    user_id = user_info["id"]
-
     orgs = user_info["orgs"]
     valid_orgs = [org for org in orgs if org["canPay"] is True]
+
+    if len(valid_orgs) == 0:
+        return_msg = """You are not a member of any organization with a valid payment method.
+        Please add a valid payment method for your organization in order to create competitions."""
+        return [
+            gr.Box.update(visible=False),
+            gr.Markdown.update(
+                value=return_msg,
+                visible=True,
+            ),
+            gr.Dropdown.update(visible=False),
+        ]
+
     valid_orgs = [org for org in valid_orgs if org["roleInOrg"] in ("admin", "write")]
 
-    valid_entities = {org["id"]: org["name"] for org in valid_orgs}
-    valid_entities[user_id] = username
+    if len(valid_orgs) == 0:
+        return_msg = """You dont have write access for any organization.
+        Please contact your organization's admin to add you as a member with write privilages."""
+        return [
+            gr.Box.update(visible=False),
+            gr.Markdown.update(
+                value=return_msg,
+                visible=True,
+            ),
+            gr.Dropdown.update(visible=False),
+        ]
 
-    # reverse the dictionary
-    valid_entities = {v: k for k, v in valid_entities.items()}
+    valid_entities = {org["name"]: org["id"] for org in valid_orgs}
 
     return [
         gr.Box.update(visible=True),
         gr.Markdown.update(value="", visible=False),
-        gr.Dropdown.update(choices=list(valid_entities.keys()), visible=True, value=username),
+        gr.Dropdown.update(
+            choices=list(valid_entities.keys()),
+            visible=True,
+            value=list(valid_entities.keys())[0],
+        ),
     ]
 
 
@@ -361,6 +471,8 @@ with gr.Blocks() as demo:
         with gr.Row():
             create_button = gr.Button("Create Competition")
 
+    final_output = gr.Markdown(visible=True)
+
     login_button.click(
         check_if_user_can_create_competition, inputs=[user_token], outputs=[create_box, message_box, who_pays]
     )
@@ -377,5 +489,4 @@ with gr.Blocks() as demo:
         sample_submission_file,
         solution_file,
     ]
-    print(create_inputs)
-    create_button.click(create_competition, inputs=create_inputs, outputs=[message_box])
+    create_button.click(create_competition, inputs=create_inputs, outputs=[final_output])
