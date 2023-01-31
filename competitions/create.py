@@ -1,8 +1,12 @@
+import io
+import json
 import uuid
 
 import gradio as gr
 import pandas as pd
+from huggingface_hub import HfApi, create_repo
 
+from . import BOT_TOKEN
 from .utils import user_authentication
 
 
@@ -36,11 +40,11 @@ def create_competition(
 ):
     # generate a random id
     suffix = str(uuid.uuid4())
-    private_dataset_name = f"{competition_name}{suffix}"
-    public_dataset_name = f"{competition_name}"
-    space_name = f"{competition_name}"
+    private_dataset_name = f"{who_pays}/{competition_name}{suffix}"
+    public_dataset_name = f"{who_pays}/{competition_name}"
+    space_name = f"competitions/{competition_name}"
 
-    sample_submission_df = pd.read_csv(sample_submission_file, nrows=10)
+    sample_submission_df = pd.read_csv(sample_submission_file.name, nrows=10)
     submission_columns = ",".join(sample_submission_df.columns)
 
     conf = {
@@ -49,11 +53,183 @@ def create_competition(
         "END_DATE": end_date,
         "EVAL_HIGHER_IS_BETTER": True,
         "COMPETITION_NAME": competition_name,
+        "SUBMISSION_ID_COLUMN": "id",
         "SUBMISSION_COLUMNS": submission_columns,
+        "SUBMISSION_ROWS": len(sample_submission_df),
         "EVAL_METRIC": eval_metric,
     }
 
-    pass
+    api = HfApi()
+
+    # create private dataset repo
+    create_repo(
+        repo_id=private_dataset_name,
+        repo_type="dataset",
+        private=True,
+        token=user_token,
+        exist_ok=False,
+    )
+    competition_desc = f"""
+    # Welcome to {competition_name}
+
+    This is a competition description.
+
+    You can use markdown to format your description.
+    """
+
+    dataset_desc = f"""
+    # Dataset Description
+
+    This is a dataset description.
+
+    You can use markdown to format your description.
+
+    Dataset can be downloaded from [here](https://hf.co/datasets/{public_dataset_name})
+    """
+
+    conf_json = json.dumps(conf)
+    conf_bytes = conf_json.encode("utf-8")
+    conf_buffer = io.BytesIO(conf_bytes)
+
+    api.upload_file(
+        path_or_fileobj=conf_buffer,
+        path_in_repo="conf.json",
+        repo_id=private_dataset_name,
+        repo_type="dataset",
+        token=user_token,
+    )
+
+    # convert competition description to bytes
+    competition_desc_bytes = competition_desc.encode("utf-8")
+    competition_desc_buffer = io.BytesIO(competition_desc_bytes)
+
+    api.upload_file(
+        path_or_fileobj=competition_desc_buffer,
+        path_in_repo="COMPETITION_DESC.md",
+        repo_id=private_dataset_name,
+        repo_type="dataset",
+        token=user_token,
+    )
+
+    # convert dataset description to bytes
+    dataset_desc_bytes = dataset_desc.encode("utf-8")
+    dataset_desc_buffer = io.BytesIO(dataset_desc_bytes)
+
+    api.upload_file(
+        path_or_fileobj=dataset_desc_buffer,
+        path_in_repo="DATASET_DESC.md",
+        repo_id=private_dataset_name,
+        repo_type="dataset",
+        token=user_token,
+    )
+
+    if solution_file is not None:
+
+        with open(solution_file.name, "rb") as f:
+            solution_bytes_data = f.read()
+        # upload solution file
+        api.upload_file(
+            path_or_fileobj=solution_bytes_data,
+            path_in_repo="solution.csv",
+            repo_id=private_dataset_name,
+            repo_type="dataset",
+            token=user_token,
+        )
+
+    # create public dataset repo
+    create_repo(
+        repo_id=public_dataset_name,
+        repo_type="dataset",
+        private=False,
+        token=user_token,
+        exist_ok=False,
+    )
+    if sample_submission_file is not None:
+        # upload sample submission file
+        with open(sample_submission_file.name, "rb") as f:
+            sample_submission_bytes_data = f.read()
+
+        api.upload_file(
+            path_or_fileobj=sample_submission_bytes_data,
+            path_in_repo="sample_submission.csv",
+            repo_id=public_dataset_name,
+            repo_type="dataset",
+            token=user_token,
+        )
+
+    dockerfile = """
+    FROM huggingface/competitions:latest
+    CMD competitions run
+    """
+    dockerfile = dockerfile.strip()
+    dockerfile = dockerfile.replace("    ", "")
+
+    # create competition space
+    create_repo(
+        repo_id=space_name,
+        repo_type="space",
+        private=False,
+        token=BOT_TOKEN,
+        space_sdk="docker",
+        exist_ok=False,
+    )
+
+    # upload dockerfile
+    dockerfile_bytes = dockerfile.encode("utf-8")
+    dockerfile_buffer = io.BytesIO(dockerfile_bytes)
+
+    api.upload_file(
+        path_or_fileobj=dockerfile_buffer,
+        path_in_repo="Dockerfile",
+        repo_id=space_name,
+        repo_type="space",
+        token=BOT_TOKEN,
+    )
+
+    space_readme = f"""
+    ---
+    title: {competition_name}
+    emoji: 🏆
+    colorFrom: blue
+    colorTo: gray
+    sdk: docker
+    pinned: false
+    ---
+    """
+    space_readme = space_readme.strip()
+    space_readme = space_readme.replace("    ", "")
+    print(repr(space_readme))
+
+    # upload space readme
+    space_readme_bytes = space_readme.encode("utf-8")
+    space_readme_buffer = io.BytesIO(space_readme_bytes)
+
+    api.upload_file(
+        path_or_fileobj=space_readme_buffer,
+        path_in_repo="README.md",
+        repo_id=space_name,
+        repo_type="space",
+        token=BOT_TOKEN,
+    )
+
+    api.add_space_secret(
+        repo_id=space_name,
+        key="COMPETITION_ID",
+        value=private_dataset_name,
+        token=BOT_TOKEN,
+    )
+    api.add_space_secret(
+        repo_id=space_name,
+        key="AUTOTRAIN_USERNAME",
+        value=who_pays,
+        token=BOT_TOKEN,
+    )
+    api.add_space_secret(
+        repo_id=space_name,
+        key="AUTOTRAIN_TOKEN",
+        value=user_token,
+        token=BOT_TOKEN,
+    )
 
 
 def check_if_user_can_create_competition(user_token):
@@ -201,4 +377,5 @@ with gr.Blocks() as demo:
         sample_submission_file,
         solution_file,
     ]
+    print(create_inputs)
     create_button.click(create_competition, inputs=create_inputs, outputs=[message_box])
