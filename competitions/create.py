@@ -61,6 +61,7 @@ def create_competition(
     end_date,
     sample_submission_file,
     solution_file,
+    is_public,
 ):
 
     # verify sample submission and solution
@@ -97,11 +98,14 @@ def create_competition(
             visible=True,
         )
 
-    # generate a random id
+    is_public = is_public == "Public"
     suffix = str(uuid.uuid4())
     private_dataset_name = f"{who_pays}/{competition_name}{suffix}"
     public_dataset_name = f"{who_pays}/{competition_name}"
-    space_name = f"competitions/{competition_name}"
+    if is_public:
+        space_name = f"competitions/{competition_name}"
+    else:
+        space_name = f"{who_pays}/{competition_name}"
 
     sample_submission_df = pd.read_csv(sample_submission_file.name)
     submission_columns = ",".join(sample_submission_df.columns)
@@ -249,7 +253,7 @@ def create_competition(
         repo_id=space_name,
         repo_type="space",
         private=False,
-        token=BOT_TOKEN,
+        token=BOT_TOKEN if is_public else user_token,
         space_sdk="docker",
         exist_ok=False,
     )
@@ -263,7 +267,7 @@ def create_competition(
         path_in_repo="Dockerfile",
         repo_id=space_name,
         repo_type="space",
-        token=BOT_TOKEN,
+        token=BOT_TOKEN if is_public else user_token,
     )
 
     space_readme = f"""
@@ -288,26 +292,26 @@ def create_competition(
         path_in_repo="README.md",
         repo_id=space_name,
         repo_type="space",
-        token=BOT_TOKEN,
+        token=BOT_TOKEN if is_public else user_token,
     )
 
     api.add_space_secret(
         repo_id=space_name,
         key="COMPETITION_ID",
         value=private_dataset_name,
-        token=BOT_TOKEN,
+        token=BOT_TOKEN if is_public else user_token,
     )
     api.add_space_secret(
         repo_id=space_name,
         key="AUTOTRAIN_USERNAME",
         value=who_pays,
-        token=BOT_TOKEN,
+        token=BOT_TOKEN if is_public else user_token,
     )
     api.add_space_secret(
         repo_id=space_name,
         key="AUTOTRAIN_TOKEN",
         value=user_token,
-        token=BOT_TOKEN,
+        token=BOT_TOKEN if is_public else user_token,
     )
 
     return gr.Markdown.update(
@@ -317,7 +321,8 @@ def create_competition(
             <p>Private dataset: <a href="https://hf.co/datasets/{private_dataset_name}">{private_dataset_name}</a></p>
             <p>Public dataset: <a href="https://hf.co/datasets/{public_dataset_name}">{public_dataset_name}</a></p>
             <p>Competition space: <a href="https://hf.co/spaces/{space_name}">{space_name}</a></p>
-            <p>Note: Do NOT share the private dataset or link with anyone else.</p>
+            <p>NOTE: for private competitions, please add `autoevaluator` user to your org: {who_pays}.</p>
+            <p>NOTE: Do NOT share the private dataset or link with anyone else.</p>
         </div>
         """,
         visible=True,
@@ -450,26 +455,31 @@ with gr.Blocks() as demo:
                 value="",
                 label="End Date (YYYY-MM-DD)",
             )
-        with gr.Row():
-            with gr.Column():
-                sample_submission_file = gr.File(
-                    label="sample_submission.csv",
-                )
-            with gr.Column():
-                solution_file = gr.File(
-                    label="solution.csv",
-                )
-        gr.Markdown(
+        with gr.Box():
+            with gr.Row():
+                with gr.Column():
+                    sample_submission_file = gr.File(
+                        label="sample_submission.csv",
+                    )
+                with gr.Column():
+                    solution_file = gr.File(
+                        label="solution.csv",
+                    )
+            gr.Markdown(
+                """Please note that you will need to upload training and test
+            data separately to the public repository that will be created.
+            You can also change sample_submission and solution files later.
             """
-        <p style="text-align: center">
-        <h4>Please note that you will need to upload training and test
-        data separately to the public repository that will be created.
-        You can also change sample_submission and solution files later.</h4>
-        </p>
-        """
-        )
-        with gr.Row():
-            create_button = gr.Button("Create Competition")
+            )
+        with gr.Box():
+            with gr.Row():
+                is_public = gr.Dropdown(
+                    ["Public", "Private"],
+                    label="Competition Visibility. Private competitions are only visible to you and your organization members and are created inside your organization. Public competitions are available at hf.co/competitions.",
+                    value="Public",
+                )
+            with gr.Row():
+                create_button = gr.Button("Create Competition")
 
     final_output = gr.Markdown(visible=True)
 
@@ -488,5 +498,6 @@ with gr.Blocks() as demo:
         end_date,
         sample_submission_file,
         solution_file,
+        is_public,
     ]
     create_button.click(create_competition, inputs=create_inputs, outputs=[final_output])
