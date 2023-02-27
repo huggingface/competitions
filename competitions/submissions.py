@@ -219,25 +219,30 @@ class Submissions:
         return user_info
 
     def _create_autotrain_project(self, submission_id, competition_id, user_id, competition_type):
-        project_config = {}
-        project_config["dataset_name"] = "lewtun/imdb-dummy"
-        project_config["dataset_config"] = "lewtun--imdb-dummy"
-        project_config["dataset_split"] = "train"
-        project_config["col_mapping"] = {"text": "text", "label": "target"}
+
+        # task: Literal["competition"]
+        # competition_id = Field("", title="Competition ID")
+        # competition_type = Field("", title="Competition Type")
+        # user_id = Field("", title="Competition User ID")
+        # submission_id = Field("", title="Submission ID")
 
         payload = {
             "username": self.autotrain_username,
             "proj_name": submission_id,
             "task": 26,
             "config": {
+                "advanced": True,
                 "language": "unk",
                 "max_models": 1,
-                "competition": {
-                    "submission_id": submission_id,
-                    "competition_id": competition_id,
-                    "user_id": user_id,
-                    "competition_type": "generic",
-                },
+                "params": [
+                    {
+                        "task": "competition",
+                        "competition_id": competition_id,
+                        "competition_type": "generic",
+                        "user_id": user_id,
+                        "submission_id": submission_id,
+                    }
+                ],
             },
         }
 
@@ -249,23 +254,6 @@ class Submissions:
         ).json()
 
         time.sleep(5)
-        # Upload data
-        payload = {
-            "split": 4,
-            "col_mapping": project_config["col_mapping"],
-            "load_config": {"max_size_bytes": 0, "shuffle": False},
-            "dataset_id": project_config["dataset_name"],
-            "dataset_config": project_config["dataset_config"],
-            "dataset_split": project_config["dataset_split"],
-        }
-
-        _ = http_post(
-            path=f"/projects/{project_json_resp['id']}/data/dataset",
-            payload=payload,
-            token=self.autotrain_token,
-            domain=self.autotrain_backend_api,
-        ).json()
-        logger.info("💾💾💾 Dataset creation done 💾💾💾")
 
         # Process data
         _ = http_post(
