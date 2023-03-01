@@ -10,7 +10,7 @@ from . import BOT_TOKEN
 from .utils import user_authentication
 
 
-def verify_sample_and_solution(sample_submission, solution):
+def verify_sample_and_solution(sample_submission, solution, eval_metric):
     sample_submission = pd.read_csv(sample_submission.name)
     solution = pd.read_csv(solution.name)
 
@@ -21,13 +21,14 @@ def verify_sample_and_solution(sample_submission, solution):
     if "id" not in solution.columns:
         raise Exception("Solution file should contain an id column")
 
-    # check if both files have the same ids
-    if not (sample_submission["id"] == solution["id"]).all():
-        raise Exception("Sample submission and solution should have the same ids")
+    if eval_metric != "map-iou":
+        # check if both files have the same ids
+        if not (sample_submission["id"] == solution["id"]).all():
+            raise Exception("Sample submission and solution should have the same ids")
 
-    # check if both files have the same number of rows
-    if sample_submission.shape[0] != solution.shape[0]:
-        raise Exception("Sample submission and solution should have the same number of rows")
+        # check if both files have the same number of rows
+        if sample_submission.shape[0] != solution.shape[0]:
+            raise Exception("Sample submission and solution should have the same number of rows")
 
     # check if solution contains a split column
     if "split" not in solution.columns:
@@ -41,11 +42,12 @@ def verify_sample_and_solution(sample_submission, solution):
     if not set(solution["split"].unique()) == set(["public", "private"]):
         raise Exception("Split column should contain only two unique values: public and private")
 
-    # except the `split` column, all other columns should be the same
-    solution_columns = solution.columns.tolist()
-    solution_columns.remove("split")
-    if not (sample_submission.columns == solution_columns).all():
-        raise Exception("Sample submission and solution should have the same columns, except for the split column")
+    if eval_metric != "map-iou":
+        # except the `split` column, all other columns should be the same
+        solution_columns = solution.columns.tolist()
+        solution_columns.remove("split")
+        if not (sample_submission.columns == solution_columns).all():
+            raise Exception("Sample submission and solution should have the same columns, except for the split column")
 
     return True
 
@@ -66,7 +68,7 @@ def create_competition(
 
     # verify sample submission and solution
     try:
-        verify_sample_and_solution(sample_submission_file, solution_file)
+        verify_sample_and_solution(sample_submission_file, solution_file, eval_metric)
     except Exception as e:
         return gr.Markdown.update(
             value=f"""
@@ -122,6 +124,8 @@ def create_competition(
         "SUBMISSION_ROWS": len(sample_submission_df),
         "EVAL_METRIC": eval_metric,
     }
+    if eval_metric == "map-iou":
+        conf["IOU_THRESHOLD"] = 0.5
 
     api = HfApi()
 
@@ -431,7 +435,7 @@ with gr.Blocks() as demo:
                 placeholder="my-awesome-competition",
             )
             eval_metric = gr.Dropdown(
-                ["accuracy", "auc", "f1", "logloss", "precision", "recall"],
+                ["accuracy", "auc", "f1", "logloss", "map-iou", "precision", "recall"],
                 label="Evaluation Metric",
                 value="accuracy",
             )

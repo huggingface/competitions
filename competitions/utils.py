@@ -16,7 +16,6 @@ def http_post(path: str, token: str, payload=None, domain: str = None, params=No
         )
     except requests.exceptions.ConnectionError:
         logger.error("❌ Failed to reach AutoNLP API, check your internet connection")
-    logger.info(response.text)
     response.raise_for_status()
     return response
 
