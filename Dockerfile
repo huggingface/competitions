@@ -1,7 +1,7 @@
 FROM python:3.8.9
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    TZ=Europe/Paris
+    TZ=UTC
 
 RUN pip install pip==22.3.1
 
