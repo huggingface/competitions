@@ -49,6 +49,11 @@ class Leaderboard:
                 submission_info = json.load(f)
             # only select submissions that are done
             submission_info["submissions"] = [sub for sub in submission_info["submissions"] if sub["status"] == "done"]
+            submission_info["submissions"] = [
+                sub
+                for sub in submission_info["submissions"]
+                if datetime.strptime(sub["date"], "%Y-%m-%d") < self.end_date
+            ]
             if len(submission_info["submissions"]) == 0:
                 continue
             submission_info["submissions"].sort(
@@ -162,8 +167,8 @@ class Leaderboard:
         df["submission_datetime"] = pd.to_datetime(
             df["submission_date"] + " " + df["submission_time"], format="%Y-%m-%d %H:%M:%S"
         )
-        # only keep submissions before or on the end date
-        df = df[df["submission_datetime"] <= self.end_date].reset_index(drop=True)
+        # only keep submissions before the end date
+        df = df[df["submission_datetime"] < self.end_date].reset_index(drop=True)
 
         # sort by submission datetime
         # sort by public score and submission datetime

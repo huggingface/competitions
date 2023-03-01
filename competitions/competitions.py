@@ -100,6 +100,7 @@ def _fetch_leaderboard(private):
                 ),
             ]
     df = leaderboard.fetch(private=private)
+    # df.to_csv("public_leaderboard.csv" if not private else "private_leaderboard.csv", index=False)
     num_teams = len(df)
     return [
         gr.DataFrame.update(visible=True, value=df),
