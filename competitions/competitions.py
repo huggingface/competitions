@@ -96,7 +96,7 @@ def _fetch_leaderboard(private):
             return [
                 gr.DataFrame.update(visible=False),
                 gr.Markdown.update(
-                    visible=True, value="Private Leaderboard will be available after the competition ends"
+                    visible=True, value=f"Private Leaderboard will be available on {competition_info.end_date} UTC."
                 ),
             ]
     df = leaderboard.fetch(private=private)

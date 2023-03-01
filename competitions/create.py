@@ -457,7 +457,7 @@ with gr.Blocks() as demo:
             end_date = gr.Textbox(
                 max_lines=1,
                 value="",
-                label="End Date (YYYY-MM-DD)",
+                label="End Date (YYYY-MM-DD), Private LB will be visible on this date",
             )
         with gr.Box():
             with gr.Row():

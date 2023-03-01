@@ -101,6 +101,41 @@ class Submissions:
             return False
         return True
 
+    def _submissions_today(self, user_info):
+        user_id = user_info["id"]
+        try:
+            user_fname = hf_hub_download(
+                repo_id=self.competition_id,
+                filename=f"submission_info/{user_id}.json",
+                use_auth_token=self.autotrain_token,
+                repo_type="dataset",
+            )
+        except EntryNotFoundError:
+            self._add_new_user(user_info)
+            user_fname = hf_hub_download(
+                repo_id=self.competition_id,
+                filename=f"submission_info/{user_id}.json",
+                use_auth_token=self.autotrain_token,
+                repo_type="dataset",
+            )
+        except Exception as e:
+            logger.error(e)
+            raise Exception("Hugging Face Hub is unreachable, please try again later.")
+
+        with open(user_fname, "r") as f:
+            user_submission_info = json.load(f)
+
+        todays_date = datetime.now().strftime("%Y-%m-%d")
+        if len(user_submission_info["submissions"]) == 0:
+            user_submission_info["submissions"] = []
+
+        # count the number of times user has submitted today
+        todays_submissions = 0
+        for sub in user_submission_info["submissions"]:
+            if sub["date"] == todays_date:
+                todays_submissions += 1
+        return todays_submissions
+
     def _increment_submissions(self, user_id, submission_id, submission_comment):
         user_fname = hf_hub_download(
             repo_id=self.competition_id,
@@ -219,13 +254,6 @@ class Submissions:
         return user_info
 
     def _create_autotrain_project(self, submission_id, competition_id, user_id, competition_type):
-
-        # task: Literal["competition"]
-        # competition_id = Field("", title="Competition ID")
-        # competition_type = Field("", title="Competition Type")
-        # user_id = Field("", title="Competition User ID")
-        # submission_id = Field("", title="Submission ID")
-
         payload = {
             "username": self.autotrain_username,
             "proj_name": submission_id,
