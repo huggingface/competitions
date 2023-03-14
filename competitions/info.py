@@ -41,6 +41,16 @@ class CompetitionInfo:
         self.config = self.load_config(config_fname)
         self.competition_desc = self.load_md(competition_desc)
         self.dataset_desc = self.load_md(dataset_desc)
+        try:
+            submission_desc = hf_hub_download(
+                repo_id=self.competition_id,
+                filename="SUBMISSION_DESC.md",
+                use_auth_token=self.autotrain_token,
+                repo_type="dataset",
+            )
+            self.submission_desc = self.load_md(submission_desc)
+        except Exception:
+            self.submission_desc = None
 
     def load_md(self, md_path):
         with open(md_path) as f:
@@ -81,6 +91,10 @@ class CompetitionInfo:
     @property
     def submission_columns(self):
         return self.config["SUBMISSION_COLUMNS"].split(",")
+
+    @property
+    def submission_description(self):
+        return self.submission_desc
 
     @property
     def dataset_description(self):
