@@ -237,11 +237,38 @@ class Submissions:
             raise NoSubmissionError("No submissions found ")
 
         submissions_df = pd.DataFrame(user_submissions)
+        logger.info(submissions_df)
         if not private:
             submissions_df = submissions_df.drop(columns=["private_score"])
             submissions_df = submissions_df[self.public_sub_columns]
         else:
             submissions_df = submissions_df[self.private_sub_columns]
+
+        if not private:
+            first_submission = submissions_df.iloc[0]
+            if isinstance(first_submission["public_score"], dict):
+                # split the public score dict into columns
+                public_score_df = pd.DataFrame.from_dict(first_submission["public_score"], orient="index")
+                public_score_df = public_score_df.transpose()
+                public_score_df.columns = [f"public_score_{col}" for col in public_score_df.columns]
+                submissions_df = submissions_df.drop(columns=["public_score"])
+                submissions_df = pd.concat([submissions_df, public_score_df], axis=1)
+        else:
+            first_submission = submissions_df.iloc[0]
+            if isinstance(first_submission["private_score"], dict):
+                private_score_df = pd.DataFrame.from_dict(first_submission["private_score"], orient="index")
+                private_score_df = private_score_df.transpose()
+                private_score_df.columns = [f"private_score_{col}" for col in private_score_df.columns]
+                submissions_df = submissions_df.drop(columns=["private_score"])
+                submissions_df = pd.concat([submissions_df, private_score_df], axis=1)
+
+            if isinstance(first_submission["public_score"], dict):
+                public_score_df = pd.DataFrame.from_dict(first_submission["public_score"], orient="index")
+                public_score_df = public_score_df.transpose()
+                public_score_df.columns = [f"public_score_{col}" for col in public_score_df.columns]
+                submissions_df = submissions_df.drop(columns=["public_score"])
+                submissions_df = pd.concat([submissions_df, public_score_df], axis=1)
+
         return submissions_df
 
     def _get_user_info(self, user_token):

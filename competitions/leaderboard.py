@@ -20,6 +20,9 @@ class Leaderboard:
     autotrain_token: str
 
     def __post_init__(self):
+        self._refresh_columns()
+
+    def _refresh_columns(self):
         self.private_columns = [
             "rank",
             "name",
@@ -34,6 +37,7 @@ class Leaderboard:
         ]
 
     def _process_public_lb(self):
+        self._refresh_columns()
         start_time = time.time()
         submissions_folder = snapshot_download(
             repo_id=self.competition_id,
@@ -56,6 +60,20 @@ class Leaderboard:
             ]
             if len(submission_info["submissions"]) == 0:
                 continue
+            other_scores = []
+            if isinstance(submission_info["submissions"][0]["public_score"], dict):
+                # get keys of the dict
+                score_keys = list(submission_info["submissions"][0]["public_score"].keys())
+                # get the first key after sorting
+                score_key = sorted(score_keys)[0]
+                other_scores = [f"public_score_{k}" for k in score_keys if k != score_key]
+                self.public_columns.extend(other_scores)
+                for _sub in submission_info["submissions"]:
+                    for skey in score_keys:
+                        if skey != score_key:
+                            _sub[f"public_score_{skey}"] = _sub["public_score"][skey]
+                    _sub["public_score"] = _sub["public_score"][score_key]
+
             submission_info["submissions"].sort(
                 key=lambda x: x["public_score"],
                 reverse=True if self.eval_higher_is_better else False,
@@ -74,11 +92,14 @@ class Leaderboard:
                 "submission_date": submission_info["submissions"]["date"],
                 "submission_time": submission_info["submissions"]["time"],
             }
+            for score in other_scores:
+                temp_info[score] = submission_info["submissions"][score]
             submissions.append(temp_info)
         logger.info(f"Processed submissions in {time.time() - start_time} seconds")
         return submissions
 
     def _process_private_lb(self):
+        self._refresh_columns()
         start_time = time.time()
         submissions_folder = snapshot_download(
             repo_id=self.competition_id,
@@ -97,6 +118,25 @@ class Leaderboard:
                 ]
                 if len(submission_info["submissions"]) == 0:
                     continue
+                other_scores = []
+                if isinstance(submission_info["submissions"][0]["public_score"], dict):
+                    # get keys of the dict
+                    score_keys = list(submission_info["submissions"][0]["public_score"].keys())
+                    # get the first key after sorting
+                    score_key = sorted(score_keys)[0]
+                    other_scores = [f"public_score_{k}" for k in score_keys if k != score_key]
+                    self.public_columns.extend(other_scores)
+                    for _sub in submission_info["submissions"]:
+                        for skey in score_keys:
+                            if skey != score_key:
+                                _sub[f"public_score_{skey}"] = _sub["public_score"][skey]
+                        _sub["public_score"] = _sub["public_score"][score_key]
+
+                    for _sub in submission_info["submissions"]:
+                        for skey in score_keys:
+                            if skey != score_key:
+                                _sub[f"private_score_{skey}"] = _sub["private_score"][skey]
+                        _sub["private_score"] = _sub["private_score"][score_key]
                 # count the number of submissions which are selected
                 selected_submissions = 0
                 for sub in submission_info["submissions"]:
@@ -149,6 +189,8 @@ class Leaderboard:
                     "submission_date": submission_info["submissions"]["date"],
                     "submission_time": submission_info["submissions"]["time"],
                 }
+                for score in other_scores:
+                    temp_info[score] = submission_info["submissions"][score]
                 submissions.append(temp_info)
         logger.info(f"Processed submissions in {time.time() - start_time} seconds")
         return submissions
@@ -207,6 +249,10 @@ class Leaderboard:
 
         # convert datetime column to string
         df["submission_datetime"] = df["submission_datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
-
+        logger.info(df)
         columns = self.public_columns if not private else self.private_columns
+        logger.info(columns)
+        # send submission_datetime to the end
+        columns.remove("submission_datetime")
+        columns.append("submission_datetime")
         return df[columns]
