@@ -248,26 +248,40 @@ class Submissions:
             first_submission = submissions_df.iloc[0]
             if isinstance(first_submission["public_score"], dict):
                 # split the public score dict into columns
-                public_score_df = pd.DataFrame.from_dict(first_submission["public_score"], orient="index")
-                public_score_df = public_score_df.transpose()
-                public_score_df.columns = [f"public_score_{col}" for col in public_score_df.columns]
-                submissions_df = submissions_df.drop(columns=["public_score"])
-                submissions_df = pd.concat([submissions_df, public_score_df], axis=1)
+                temp_scores_df = submissions_df["public_score"].apply(pd.Series)
+                temp_scores_df = temp_scores_df.rename(columns=lambda x: "public_" + str(x))
+                submissions_df = pd.concat(
+                    [
+                        submissions_df.drop(["public_score"], axis=1),
+                        temp_scores_df,
+                    ],
+                    axis=1,
+                )
         else:
             first_submission = submissions_df.iloc[0]
             if isinstance(first_submission["private_score"], dict):
-                private_score_df = pd.DataFrame.from_dict(first_submission["private_score"], orient="index")
-                private_score_df = private_score_df.transpose()
-                private_score_df.columns = [f"private_score_{col}" for col in private_score_df.columns]
-                submissions_df = submissions_df.drop(columns=["private_score"])
-                submissions_df = pd.concat([submissions_df, private_score_df], axis=1)
+                # split the public score dict into columns
+                temp_scores_df = submissions_df["private_score"].apply(pd.Series)
+                temp_scores_df = temp_scores_df.rename(columns=lambda x: "private_" + str(x))
+                submissions_df = pd.concat(
+                    [
+                        submissions_df.drop(["private_score"], axis=1),
+                        temp_scores_df,
+                    ],
+                    axis=1,
+                )
 
             if isinstance(first_submission["public_score"], dict):
-                public_score_df = pd.DataFrame.from_dict(first_submission["public_score"], orient="index")
-                public_score_df = public_score_df.transpose()
-                public_score_df.columns = [f"public_score_{col}" for col in public_score_df.columns]
-                submissions_df = submissions_df.drop(columns=["public_score"])
-                submissions_df = pd.concat([submissions_df, public_score_df], axis=1)
+                # split the public score dict into columns
+                temp_scores_df = submissions_df["public_score"].apply(pd.Series)
+                temp_scores_df = temp_scores_df.rename(columns=lambda x: "public_" + str(x))
+                submissions_df = pd.concat(
+                    [
+                        submissions_df.drop(["public_score"], axis=1),
+                        temp_scores_df,
+                    ],
+                    axis=1,
+                )
 
         return submissions_df
 
