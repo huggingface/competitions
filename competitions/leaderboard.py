@@ -67,6 +67,7 @@ class Leaderboard:
                 # get the first key after sorting
                 score_key = sorted(score_keys)[0]
                 other_scores = [f"public_score_{k}" for k in score_keys if k != score_key]
+
                 self.public_columns.extend(other_scores)
                 for _sub in submission_info["submissions"]:
                     for skey in score_keys:
@@ -252,6 +253,10 @@ class Leaderboard:
         logger.info(df)
         columns = self.public_columns if not private else self.private_columns
         logger.info(columns)
+        # remove duplicate columns
+        # ['rank', 'name', 'public_score', 'submission_datetime', 'public_score_track1', 'public_score_track1', 'public_score_track1', 'public_score_track1']
+        columns = list(dict.fromkeys(columns))
+
         # send submission_datetime to the end
         columns.remove("submission_datetime")
         columns.append("submission_datetime")
