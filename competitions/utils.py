@@ -48,3 +48,8 @@ def user_authentication(token):
         logger.error(f"Failed to request whoami-v2 - {repr(err)}")
         raise Exception("Hugging Face Hub is unreachable, please try again later.")
     return response.json()
+
+
+def make_clickable_user(user_id):
+    link = "https://huggingface.co/" + user_id
+    return f'<a  target="_blank" href="{link}">{user_id}</a>'
