@@ -101,7 +101,7 @@ def _fetch_leaderboard(private):
                 ),
             ]
     df = leaderboard.fetch(private=private)
-    df["name"] = df["name"].apply(make_clickable_user)
+    # df["name"] = df["name"].apply(make_clickable_user)
     # df.to_csv("public_leaderboard.csv" if not private else "private_leaderboard.csv", index=False)
     num_teams = len(df)
     return [
