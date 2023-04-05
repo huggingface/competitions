@@ -3,7 +3,7 @@ FROM python:3.8.9
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=UTC
 
-RUN pip install pip==22.3.1
+RUN pip install pip==23.0.1
 
 WORKDIR /app
 RUN mkdir -p /app/.cache
@@ -32,4 +32,4 @@ RUN conda create -p /app/env -y python=3.8
 SHELL ["conda", "run","--no-capture-output", "-p","/app/env", "/bin/bash", "-c"]
 
 COPY --chown=1000:1000 . /app/
-RUN python setup.py install
+RUN pip install -e .
