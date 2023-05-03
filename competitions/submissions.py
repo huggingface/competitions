@@ -237,35 +237,55 @@ class Submissions:
             raise NoSubmissionError("No submissions found ")
 
         submissions_df = pd.DataFrame(user_submissions)
-        logger.info(submissions_df)
+
         if not private:
             submissions_df = submissions_df.drop(columns=["private_score"])
             submissions_df = submissions_df[self.public_sub_columns]
         else:
             submissions_df = submissions_df[self.private_sub_columns]
+        if not private:
+            failed_submissions = submissions_df[
+                (submissions_df["status"].isin(["failed", "error"])) | (submissions_df["public_score"] == -1)
+            ]
+            successful_submissions = submissions_df[
+                ~submissions_df["status"].isin(["failed", "error"]) & (submissions_df["public_score"] != -1)
+            ]
+        else:
+            failed_submissions = submissions_df[
+                (submissions_df["status"].isin(["failed", "error"]))
+                | (submissions_df["private_score"] == -1)
+                | (submissions_df["public_score"] == -1)
+            ]
+            successful_submissions = submissions_df[
+                ~submissions_df["status"].isin(["failed", "error"])
+                & (submissions_df["private_score"] != -1)
+                & (submissions_df["public_score"] != -1)
+            ]
+        failed_submissions = failed_submissions.reset_index(drop=True)
+        successful_submissions = successful_submissions.reset_index(drop=True)
 
         if not private:
-            first_submission = submissions_df.iloc[0]
+            first_submission = successful_submissions.iloc[0]
             if isinstance(first_submission["public_score"], dict):
                 # split the public score dict into columns
-                temp_scores_df = submissions_df["public_score"].apply(pd.Series)
+                temp_scores_df = successful_submissions["public_score"].apply(pd.Series)
                 temp_scores_df = temp_scores_df.rename(columns=lambda x: "public_" + str(x))
-                submissions_df = pd.concat(
+                successful_submissions = pd.concat(
                     [
-                        submissions_df.drop(["public_score"], axis=1),
+                        successful_submissions.drop(["public_score"], axis=1),
                         temp_scores_df,
                     ],
                     axis=1,
                 )
         else:
-            first_submission = submissions_df.iloc[0]
+            first_submission = successful_submissions.iloc[0]
             if isinstance(first_submission["private_score"], dict):
                 # split the public score dict into columns
-                temp_scores_df = submissions_df["private_score"].apply(pd.Series)
+                temp_scores_df = successful_submissions["private_score"].apply(pd.Series)
                 temp_scores_df = temp_scores_df.rename(columns=lambda x: "private_" + str(x))
-                submissions_df = pd.concat(
+                successful_submissions = pd.concat(
                     [
-                        submissions_df.drop(["private_score"], axis=1),
+                        successful_submissions.drop(["private_score"], axis=1),
                         temp_scores_df,
                     ],
                     axis=1,
@@ -273,17 +293,16 @@ class Submissions:
 
             if isinstance(first_submission["public_score"], dict):
                 # split the public score dict into columns
-                temp_scores_df = submissions_df["public_score"].apply(pd.Series)
+                temp_scores_df = successful_submissions["public_score"].apply(pd.Series)
                 temp_scores_df = temp_scores_df.rename(columns=lambda x: "public_" + str(x))
-                submissions_df = pd.concat(
+                successful_submissions = pd.concat(
                     [
-                        submissions_df.drop(["public_score"], axis=1),
+                        successful_submissions.drop(["public_score"], axis=1),
                         temp_scores_df,
                     ],
                     axis=1,
                 )
-
-        return submissions_df
+        return successful_submissions, failed_submissions
 
     def _get_user_info(self, user_token):
         user_info = user_authentication(token=user_token)
@@ -358,8 +377,8 @@ class Submissions:
         private = False
         if current_date_time >= self.end_date:
             private = True
-        subs = self._get_user_subs(user_info, private=private)
-        return subs
+        success_subs, failed_subs = self._get_user_subs(user_info, private=private)
+        return success_subs, failed_subs
 
     def new_submission(self, user_token, uploaded_file):
         # verify token

@@ -65,7 +65,6 @@ def create_competition(
     solution_file,
     is_public,
 ):
-
     # verify sample submission and solution
     try:
         verify_sample_and_solution(sample_submission_file, solution_file, eval_metric)

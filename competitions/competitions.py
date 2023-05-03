@@ -14,7 +14,6 @@ from .text import (
     SUBMISSION_SUCCESS,
     SUBMISSION_TEXT,
 )
-from .utils import make_clickable_user
 
 
 leaderboard = Leaderboard(
@@ -46,25 +45,36 @@ def _new_submission(user_token, submission_file):
 
 
 def _my_submissions(user_token):
-    df = submissions.my_submissions(user_token)
+    df, failed_df = submissions.my_submissions(user_token)
     if len(df) == 0:
         return [
             gr.Markdown.update(visible=True, value=NO_SUBMISSIONS),
             gr.DataFrame.update(visible=False),
+            gr.DataFrame.update(
+                visible=True if len(failed_df) > 0 else False, value=failed_df if len(failed_df) > 0 else None
+            ),
             gr.TextArea.update(visible=False),
             gr.Button.update(visible=False),
         ]
     selected_submission_ids = df[df["selected"] == True]["submission_id"].values.tolist()
+    failed_selected_submission_ids = failed_df[failed_df["selected"] == True]["submission_id"].values.tolist()
+    selected_submission_ids.extend(failed_selected_submission_ids)
     if len(selected_submission_ids) > 0:
         return [
             gr.Markdown.update(visible=True),
             gr.DataFrame.update(visible=True, value=df),
+            gr.DataFrame.update(
+                visible=True if len(failed_df) > 0 else False, value=failed_df if len(failed_df) > 0 else None
+            ),
             gr.TextArea.update(visible=True, value="\n".join(selected_submission_ids), interactive=True),
             gr.Button.update(visible=True),
         ]
     return [
         gr.Markdown.update(visible=False),
         gr.DataFrame.update(visible=True, value=df),
+        gr.DataFrame.update(
+            visible=True if len(failed_df) > 0 else False, value=failed_df if len(failed_df) > 0 else None
+        ),
         gr.TextArea.update(visible=True, interactive=True),
         gr.Button.update(visible=True),
     ]
@@ -83,6 +93,7 @@ def _update_selected_submissions(user_token, submission_ids):
     except PastDeadlineError:
         return [
             gr.Markdown.update(visible=True, value="You can no longer select submissions after the deadline."),
+            gr.DataFrame.update(visible=False),
             gr.DataFrame.update(visible=False),
             gr.TextArea.update(visible=False),
             gr.Button.update(visible=False),
@@ -148,7 +159,8 @@ with gr.Blocks(css=".tabitem {padding: 25px}") as demo:
                 max_lines=1, value="", label="Please enter your Hugging Face token (read only)", type="password"
             )
             output_text = gr.Markdown(visible=True, show_label=False)
-            output_df = gr.DataFrame(visible=False)
+            output_df = gr.DataFrame(visible=False, label="Succesful Submissions")
+            failed_df = gr.DataFrame(visible=False, label="Failed Submissions")
             selected_submissions = gr.TextArea(
                 visible=False,
                 label="Selected Submissions (one submission id per line)",
@@ -160,12 +172,12 @@ with gr.Blocks(css=".tabitem {padding: 25px}") as demo:
             my_subs_button.click(
                 fn=_my_submissions,
                 inputs=[user_token],
-                outputs=[output_text, output_df, selected_submissions, update_selected_submissions],
+                outputs=[output_text, output_df, failed_df, selected_submissions, update_selected_submissions],
             )
             update_selected_submissions.click(
                 fn=_update_selected_submissions,
                 inputs=[user_token, selected_submissions],
-                outputs=[output_text, output_df, selected_submissions, update_selected_submissions],
+                outputs=[output_text, output_df, failed_df, selected_submissions, update_selected_submissions],
             )
 
         fetch_lb_partial = partial(_fetch_leaderboard, private=False)
