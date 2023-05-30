@@ -125,8 +125,8 @@ class Leaderboard:
                     score_keys = list(submission_info["submissions"][0]["public_score"].keys())
                     # get the first key after sorting
                     score_key = sorted(score_keys)[0]
-                    other_scores = [f"public_score_{k}" for k in score_keys if k != score_key]
-                    self.public_columns.extend(other_scores)
+                    other_scores = [f"private_score_{k}" for k in score_keys if k != score_key]
+                    self.private_columns.extend(other_scores)
                     for _sub in submission_info["submissions"]:
                         for skey in score_keys:
                             if skey != score_key:
