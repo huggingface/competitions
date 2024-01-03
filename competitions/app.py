@@ -1,18 +1,25 @@
 import os
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 from competitions.info import CompetitionInfo
 from competitions.leaderboard import Leaderboard
+from competitions.submissions import Submissions
 
 
 HF_TOKEN = os.environ.get("HF_TOKEN", None)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COMPETITION_ID = os.getenv("COMPETITION_ID")
 COMP_INFO = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+
+
+class User(BaseModel):
+    user_token: str
+
 
 app = FastAPI()
 static_path = os.path.join(BASE_DIR, "static")
@@ -30,7 +37,11 @@ async def read_form(request: Request):
     """
     if HF_TOKEN is None:
         return templates.TemplateResponse("error.html", {"request": request})
-    context = {"request": request}
+    context = {
+        "request": request,
+        "logo": COMP_INFO.logo_url,
+        "competition_type": COMP_INFO.competition_type,
+    }
     return templates.TemplateResponse("index.html", context)
 
 
@@ -64,9 +75,41 @@ async def get_leaderboard(request: Request, lb: str):
     return resp
 
 
-@app.get("/submissions", response_class=JSONResponse)
-async def get_submissions(request: Request, user_token: str):
-    info = COMP_INFO.submission_desc
-    # info = markdown.markdown(info)
-    resp = {"response": info}
+@app.post("/my_submissions", response_class=JSONResponse)
+async def my_submissions(request: Request, user: User):
+    sub = Submissions(
+        end_date=COMP_INFO.end_date,
+        submission_limit=COMP_INFO.submission_limit,
+        competition_id=COMPETITION_ID,
+        token=HF_TOKEN,
+    )
+    success_subs, failed_subs = sub.my_submissions(user.user_token)
+    success_subs = success_subs.to_markdown(index=False)
+    failed_subs = failed_subs.to_markdown(index=False)
+    if len(success_subs.strip()) == 0 and len(failed_subs.strip()) == 0:
+        success_subs = "You have not made any submissions yet."
+        failed_subs = ""
+    resp = {"response": {"success": success_subs, "failed": failed_subs}}
     return resp
+
+
+@app.post("/new_submission", response_class=JSONResponse)
+async def new_submission(
+    submission_file: UploadFile = File(...),
+    hub_model: str = Form(...),
+    token: str = Form(...),
+    submission_comment: str = Form(...),
+):
+    sub = Submissions(
+        end_date=COMP_INFO.end_date,
+        submission_limit=COMP_INFO.submission_limit,
+        competition_id=COMPETITION_ID,
+        token=HF_TOKEN,
+    )
+    if COMP_INFO.competition_type == "generic":
+        resp = sub.new_submission(token, submission_file)
+        return {"response": f"Success! You have {resp} submissions remaining today."}
+    elif COMP_INFO.competition_type == "code":
+        resp = sub.new_submission(token, hub_model)
+        return {"response": f"Success! You have {resp} submissions remaining today."}
+    return {"response": "Invalid competition type"}

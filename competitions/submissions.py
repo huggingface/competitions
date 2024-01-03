@@ -1,6 +1,5 @@
 import io
 import json
-import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -10,8 +9,8 @@ from huggingface_hub import HfApi, hf_hub_download
 from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
 
-from .errors import AuthenticationError, NoSubmissionError, PastDeadlineError, SubmissionError, SubmissionLimitError
-from .utils import http_get, http_post, user_authentication
+from .errors import AuthenticationError, PastDeadlineError, SubmissionError, SubmissionLimitError
+from .utils import user_authentication
 
 
 @dataclass
@@ -19,16 +18,14 @@ class Submissions:
     competition_id: str
     submission_limit: str
     end_date: datetime
-    autotrain_username: str
-    autotrain_token: str
-    autotrain_backend_api: str
+    token: str
 
     def __post_init__(self):
         self.public_sub_columns = [
             "date",
             "submission_id",
             "public_score",
-            # "submission_comment",
+            "submission_comment",
             "selected",
             "status",
         ]
@@ -37,7 +34,7 @@ class Submissions:
             "submission_id",
             "public_score",
             "private_score",
-            # "submission_comment",
+            "submission_comment",
             "selected",
             "status",
         ]
@@ -46,13 +43,13 @@ class Submissions:
         return True
 
     def _add_new_user(self, user_info):
-        api = HfApi()
+        api = HfApi(token=self.token)
         user_submission_info = {}
         user_submission_info["name"] = user_info["name"]
         user_submission_info["id"] = user_info["id"]
         user_submission_info["submissions"] = []
         # convert user_submission_info to BufferedIOBase file object
-        user_submission_info_json = json.dumps(user_submission_info)
+        user_submission_info_json = json.dumps(user_submission_info, indent=4)
         user_submission_info_json_bytes = user_submission_info_json.encode("utf-8")
         user_submission_info_json_buffer = io.BytesIO(user_submission_info_json_bytes)
 
@@ -61,7 +58,6 @@ class Submissions:
             path_in_repo=f"submission_info/{user_info['id']}.json",
             repo_id=self.competition_id,
             repo_type="dataset",
-            token=self.autotrain_token,
         )
 
     def _check_user_submission_limit(self, user_info):
@@ -70,7 +66,7 @@ class Submissions:
             user_fname = hf_hub_download(
                 repo_id=self.competition_id,
                 filename=f"submission_info/{user_id}.json",
-                use_auth_token=self.autotrain_token,
+                token=self.token,
                 repo_type="dataset",
             )
         except EntryNotFoundError:
@@ -78,14 +74,14 @@ class Submissions:
             user_fname = hf_hub_download(
                 repo_id=self.competition_id,
                 filename=f"submission_info/{user_id}.json",
-                use_auth_token=self.autotrain_token,
+                token=self.token,
                 repo_type="dataset",
             )
         except Exception as e:
             logger.error(e)
             raise Exception("Hugging Face Hub is unreachable, please try again later.")
 
-        with open(user_fname, "r") as f:
+        with open(user_fname, "r", encoding="utf-8") as f:
             user_submission_info = json.load(f)
 
         todays_date = datetime.now().strftime("%Y-%m-%d")
@@ -107,7 +103,7 @@ class Submissions:
             user_fname = hf_hub_download(
                 repo_id=self.competition_id,
                 filename=f"submission_info/{user_id}.json",
-                use_auth_token=self.autotrain_token,
+                token=self.token,
                 repo_type="dataset",
             )
         except EntryNotFoundError:
@@ -115,14 +111,14 @@ class Submissions:
             user_fname = hf_hub_download(
                 repo_id=self.competition_id,
                 filename=f"submission_info/{user_id}.json",
-                use_auth_token=self.autotrain_token,
+                token=self.token,
                 repo_type="dataset",
             )
         except Exception as e:
             logger.error(e)
             raise Exception("Hugging Face Hub is unreachable, please try again later.")
 
-        with open(user_fname, "r") as f:
+        with open(user_fname, "r", encoding="utf-8") as f:
             user_submission_info = json.load(f)
 
         todays_date = datetime.now().strftime("%Y-%m-%d")
@@ -140,10 +136,10 @@ class Submissions:
         user_fname = hf_hub_download(
             repo_id=self.competition_id,
             filename=f"submission_info/{user_id}.json",
-            use_auth_token=self.autotrain_token,
+            token=self.token,
             repo_type="dataset",
         )
-        with open(user_fname, "r") as f:
+        with open(user_fname, "r", encoding="utf-8") as f:
             user_submission_info = json.load(f)
         todays_date = datetime.now().strftime("%Y-%m-%d")
         current_time = datetime.now().strftime("%H:%M:%S")
@@ -168,16 +164,15 @@ class Submissions:
                 todays_submissions += 1
 
         # convert user_submission_info to BufferedIOBase file object
-        user_submission_info_json = json.dumps(user_submission_info)
+        user_submission_info_json = json.dumps(user_submission_info, indent=4)
         user_submission_info_json_bytes = user_submission_info_json.encode("utf-8")
         user_submission_info_json_buffer = io.BytesIO(user_submission_info_json_bytes)
-        api = HfApi()
+        api = HfApi(token=self.token)
         api.upload_file(
             path_or_fileobj=user_submission_info_json_buffer,
             path_in_repo=f"submission_info/{user_id}.json",
             repo_id=self.competition_id,
             repo_type="dataset",
-            token=self.autotrain_token,
         )
         return todays_submissions
 
@@ -185,10 +180,10 @@ class Submissions:
         user_fname = hf_hub_download(
             repo_id=self.competition_id,
             filename=f"submission_info/{user_id}.json",
-            use_auth_token=self.autotrain_token,
+            token=self.token,
             repo_type="dataset",
         )
-        with open(user_fname, "r") as f:
+        with open(user_fname, "r", encoding="utf-8") as f:
             user_submission_info = json.load(f)
         return user_submission_info["submissions"]
 
@@ -203,10 +198,10 @@ class Submissions:
         user_fname = hf_hub_download(
             repo_id=self.competition_id,
             filename=f"submission_info/{user_id}.json",
-            use_auth_token=self.autotrain_token,
+            token=self.token,
             repo_type="dataset",
         )
-        with open(user_fname, "r") as f:
+        with open(user_fname, "r", encoding="utf-8") as f:
             user_submission_info = json.load(f)
 
         for sub in user_submission_info["submissions"]:
@@ -216,16 +211,15 @@ class Submissions:
                 sub["selected"] = False
 
         # convert user_submission_info to BufferedIOBase file object
-        user_submission_info_json = json.dumps(user_submission_info)
+        user_submission_info_json = json.dumps(user_submission_info, indent=4)
         user_submission_info_json_bytes = user_submission_info_json.encode("utf-8")
         user_submission_info_json_buffer = io.BytesIO(user_submission_info_json_bytes)
-        api = HfApi()
+        api = HfApi(token=self.token)
         api.upload_file(
             path_or_fileobj=user_submission_info_json_buffer,
             path_in_repo=f"submission_info/{user_id}.json",
             repo_id=self.competition_id,
             repo_type="dataset",
-            token=self.autotrain_token,
         )
 
     def _get_user_subs(self, user_info, private=False):
@@ -234,7 +228,8 @@ class Submissions:
         try:
             user_submissions = self._download_user_subs(user_id)
         except EntryNotFoundError:
-            raise NoSubmissionError("No submissions found ")
+            logger.warning("No submissions found for user")
+            return pd.DataFrame(), pd.DataFrame()
 
         submissions_df = pd.DataFrame(user_submissions)
 
@@ -313,64 +308,6 @@ class Submissions:
             raise AuthenticationError("Please verify your email on Hugging Face Hub")
         return user_info
 
-    def _create_autotrain_project(self, submission_id, competition_id, user_id, competition_type):
-        payload = {
-            "username": self.autotrain_username,
-            "proj_name": submission_id,
-            "task": 26,
-            "config": {
-                "advanced": True,
-                "language": "unk",
-                "max_models": 1,
-                "params": [
-                    {
-                        "task": "competition",
-                        "competition_id": competition_id,
-                        "competition_type": "generic",
-                        "user_id": user_id,
-                        "submission_id": submission_id,
-                    }
-                ],
-            },
-        }
-
-        project_json_resp = http_post(
-            path="/projects/create",
-            payload=payload,
-            token=self.autotrain_token,
-            domain=self.autotrain_backend_api,
-        ).json()
-
-        time.sleep(5)
-
-        # Process data
-        _ = http_post(
-            path=f"/projects/{project_json_resp['id']}/data/start_processing",
-            token=self.autotrain_token,
-            domain=self.autotrain_backend_api,
-        ).json()
-
-        logger.info("⏳ Waiting for data processing to complete ...")
-        is_data_processing_success = False
-        while is_data_processing_success is not True:
-            project_status = http_get(
-                path=f"/projects/{project_json_resp['id']}",
-                token=self.autotrain_token,
-                domain=self.autotrain_backend_api,
-            ).json()
-            # See database.database.enums.ProjectStatus for definitions of `status`
-            if project_status["status"] == 3:
-                is_data_processing_success = True
-                logger.info("✅ Data processing complete!")
-            time.sleep(3)
-
-        # Approve training job
-        _ = http_post(
-            path=f"/projects/{project_json_resp['id']}/start_training",
-            token=self.autotrain_token,
-            domain=self.autotrain_backend_api,
-        ).json()
-
     def my_submissions(self, user_token):
         user_info = self._get_user_info(user_token)
         current_date_time = datetime.now()
@@ -380,13 +317,15 @@ class Submissions:
         success_subs, failed_subs = self._get_user_subs(user_info, private=private)
         return success_subs, failed_subs
 
-    def new_submission(self, user_token, uploaded_file):
+    def new_submission(self, user_token, uploaded_file, submission_comment):
         # verify token
         user_info = self._get_user_info(user_token)
 
         # check if user can submit to the competition
         if self._check_user_submission_limit(user_info) is False:
             raise SubmissionLimitError("Submission limit reached")
+
+        logger.info(type(uploaded_file))
 
         with open(uploaded_file.name, "rb") as f:
             bytes_data = f.read()
@@ -398,13 +337,12 @@ class Submissions:
             submission_id = str(uuid.uuid4())
             file_extension = uploaded_file.orig_name.split(".")[-1]
             # upload file to hf hub
-            api = HfApi()
+            api = HfApi(token=self.token)
             api.upload_file(
                 path_or_fileobj=bytes_data,
                 path_in_repo=f"submissions/{user_id}-{submission_id}.{file_extension}",
                 repo_id=self.competition_id,
                 repo_type="dataset",
-                token=self.autotrain_token,
             )
             # update submission limit
             submissions_made = self._increment_submissions(
@@ -412,12 +350,12 @@ class Submissions:
                 submission_id=submission_id,
                 submission_comment="",
             )
-            # schedule submission for evaluation
-            self._create_autotrain_project(
-                submission_id=f"{submission_id}",
-                competition_id=f"{self.competition_id}",
-                user_id=user_id,
-                competition_type="generic",
-            )
+            # TODO: schedule submission for evaluation
+            # self._create_autotrain_project(
+            #     submission_id=f"{submission_id}",
+            #     competition_id=f"{self.competition_id}",
+            #     user_id=user_id,
+            #     competition_type="generic",
+            # )
         remaining_submissions = self.submission_limit - submissions_made
         return remaining_submissions

@@ -99,3 +99,11 @@ class CompetitionInfo:
     @property
     def dataset_description(self):
         return self.dataset_desc
+
+    @property
+    def logo_url(self):
+        return self.config["LOGO"]
+
+    @property
+    def competition_type(self):
+        return self.config["COMPETITION_TYPE"].lower().strip()
