@@ -24,4 +24,4 @@ class RunCompetitionsAppCommand(BaseCompetitionsCommand):
     def run(self):
         from ..competitions import demo
 
-        demo.queue(concurrency_count=50).launch()
+        demo.queue().launch()

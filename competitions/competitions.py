@@ -129,14 +129,10 @@ with gr.Blocks(css=".tabitem {padding: 25px}") as demo:
             gr.Markdown(f"{competition_info.dataset_description}")
         with gr.TabItem("Public Leaderboard", id="public_leaderboard") as public_leaderboard:
             output_text_public = gr.Markdown()
-            output_df_public = gr.DataFrame(
-                row_count=(50, "dynamic"), overflow_row_behaviour="paginate", visible=False
-            )
+            output_df_public = gr.DataFrame(row_count=(50, "dynamic"), visible=False)
         with gr.TabItem("Private Leaderboard", id="private_leaderboard") as private_leaderboard:
             output_text_private = gr.Markdown()
-            output_df_private = gr.DataFrame(
-                row_count=(50, "dynamic"), overflow_row_behaviour="paginate", visible=False
-            )
+            output_df_private = gr.DataFrame(row_count=(50, "dynamic"), visible=False)
         with gr.TabItem("New Submission", id="new_submission"):
             if competition_info.submission_desc is None:
                 gr.Markdown(SUBMISSION_TEXT.format(competition_info.submission_limit))
