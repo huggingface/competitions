@@ -1,9 +1,9 @@
-FROM python:3.8.9
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=UTC
 
-RUN pip install pip==23.0.1
+RUN pip install pip==23.3.2
 
 WORKDIR /app
 RUN mkdir -p /app/.cache
@@ -14,10 +14,6 @@ ENV HOME=/app
 
 ENV PYTHONPATH=$HOME/app \
     PYTHONUNBUFFERED=1 \
-    GRADIO_ALLOW_FLAGGING=never \
-    GRADIO_NUM_PORTS=1 \
-    GRADIO_SERVER_NAME=0.0.0.0 \
-    GRADIO_THEME=huggingface \
     SYSTEM=spaces
 
 
@@ -26,7 +22,8 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     && rm -f Miniconda3-latest-Linux-x86_64.sh
 ENV PATH /app/miniconda/bin:$PATH
 
-RUN conda create -p /app/env -y python=3.8
+RUN conda create -p /app/env -y python=3.10 \
+    && conda clean -ya
 
 
 SHELL ["conda", "run","--no-capture-output", "-p","/app/env", "/bin/bash", "-c"]

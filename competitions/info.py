@@ -107,3 +107,21 @@ class CompetitionInfo:
     @property
     def competition_type(self):
         return self.config["COMPETITION_TYPE"].lower().strip()
+
+    @property
+    def metric(self):
+        return self.config["EVAL_METRIC"]
+
+    @property
+    def submission_id_col(self):
+        return self.config["SUBMISSION_ID_COLUMN"]
+
+    @property
+    def submission_cols(self):
+        cols = self.config["SUBMISSION_COLUMNS"].split(",")
+        cols = [c.strip() for c in cols]
+        return cols
+
+    @property
+    def submission_rows(self):
+        return self.config["SUBMISSION_ROWS"]

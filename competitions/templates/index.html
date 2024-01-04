@@ -313,10 +313,11 @@
                 </div>
                 {% endif %}
                 <div class="form-group mt-2">
-                    <label for="params" class="text-sm font-medium text-gray-700">Submission description (optional)
+                    <label for="submission_comment" class="text-sm font-medium text-gray-700">Submission description
+                        (optional)
                     </label>
-                    <textarea id="params" name="params" rows="5" class="p-2.5 w-full text-sm text-gray-900"
-                        placeholder=""></textarea>
+                    <textarea id="submission_comment" name="submission_comment" rows="5"
+                        class="p-2.5 w-full text-sm text-gray-900" placeholder=""></textarea>
                 </div>
                 <div class="form-actions mt-6">
                     <button data-modal-hide="submission-modal" type="button"
@@ -356,9 +357,11 @@
                 return;
             }
 
-            // Token should be added here if available
             var token = document.getElementById('user_token').value;
             formData.append('token', token);
+
+            var submissionComment = document.getElementById('submission_comment').value;
+            formData.append('submission_comment', submissionComment);
 
             fetch('/new_submission', {
                 method: 'POST',

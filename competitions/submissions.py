@@ -22,7 +22,7 @@ class Submissions:
 
     def __post_init__(self):
         self.public_sub_columns = [
-            "date",
+            "datetime",
             "submission_id",
             "public_score",
             "submission_comment",
@@ -30,7 +30,7 @@ class Submissions:
             "status",
         ]
         self.private_sub_columns = [
-            "date",
+            "datetime",
             "submission_id",
             "public_score",
             "private_score",
@@ -326,16 +326,15 @@ class Submissions:
             raise SubmissionLimitError("Submission limit reached")
 
         logger.info(type(uploaded_file))
+        bytes_data = uploaded_file.file.read()
 
-        with open(uploaded_file.name, "rb") as f:
-            bytes_data = f.read()
         # verify file is valid
         if not self._verify_submission(bytes_data):
             raise SubmissionError("Invalid submission file")
         else:
             user_id = user_info["id"]
             submission_id = str(uuid.uuid4())
-            file_extension = uploaded_file.orig_name.split(".")[-1]
+            file_extension = uploaded_file.filename.split(".")[-1]
             # upload file to hf hub
             api = HfApi(token=self.token)
             api.upload_file(

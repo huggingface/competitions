@@ -1,4 +1,5 @@
 import os
+import threading
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -8,17 +9,28 @@ from pydantic import BaseModel
 
 from competitions.info import CompetitionInfo
 from competitions.leaderboard import Leaderboard
+from competitions.runner import JobRunner
 from competitions.submissions import Submissions
 
 
 HF_TOKEN = os.environ.get("HF_TOKEN", None)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COMPETITION_ID = os.getenv("COMPETITION_ID")
+OUTPUT_PATH = os.getenv("OUTPUT_PATH", "/tmp/model")
 COMP_INFO = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
 
 
 class User(BaseModel):
     user_token: str
+
+
+def run_job_runner():
+    job_runner = JobRunner(token=HF_TOKEN, competition_info=COMP_INFO, output_path=OUTPUT_PATH)
+    job_runner.run()
+
+
+thread = threading.Thread(target=run_job_runner)
+thread.start()
 
 
 app = FastAPI()
@@ -107,9 +119,9 @@ async def new_submission(
         token=HF_TOKEN,
     )
     if COMP_INFO.competition_type == "generic":
-        resp = sub.new_submission(token, submission_file)
+        resp = sub.new_submission(token, submission_file, submission_comment)
         return {"response": f"Success! You have {resp} submissions remaining today."}
     elif COMP_INFO.competition_type == "code":
-        resp = sub.new_submission(token, hub_model)
+        resp = sub.new_submission(token, hub_model, submission_comment)
         return {"response": f"Success! You have {resp} submissions remaining today."}
     return {"response": "Invalid competition type"}
