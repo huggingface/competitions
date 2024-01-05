@@ -1,5 +1,7 @@
 import argparse
 import json
+import os
+import shutil
 import subprocess
 
 from huggingface_hub import HfApi, snapshot_download
@@ -22,12 +24,11 @@ def upload_submission_file(params, file_path):
 
 
 def generate_submission_file(params):
-    base_user = params.competition_id.split("/")[0]
     logger.info("Downloading submission dataset")
     submission_dir = snapshot_download(
-        repo_id=f"{base_user}/{params.submission_id}",
+        repo_id=params.submission_repo,
         local_dir=params.output_path,
-        token=params.token,
+        token=os.environ.get("USER_TOKEN"),
         repo_type="model",
     )
     # submission_dir has a script.py file
@@ -35,7 +36,13 @@ def generate_submission_file(params):
     # the script.py will generate a submission.csv file in the submission_dir
     # push the submission.csv file to the repo using upload_submission_file
     logger.info("Generating submission file")
-    subprocess.run(["python", "script.py"], cwd=submission_dir)
+    # copy socket-kit.so to submission_dir
+    shutil.copyfile("socket-kit.so", f"{submission_dir}/socket-kit.so")
+    cmd = "python script.py"
+    socket_kit_path = os.path.abspath(f"{submission_dir}/socket-kit.so")
+    env = os.environ.copy()
+    env["LD_PRELOAD"] = socket_kit_path
+    subprocess.run(cmd, cwd=submission_dir, shell=True, check=True, env=env)
 
     api = HfApi(token=params.token)
     api.upload_file(
@@ -48,6 +55,8 @@ def generate_submission_file(params):
 
 @utils.monitor
 def run(params):
+    logger.info(params)
+    logger.info(f"User token: {os.environ.get('USER_TOKEN')}")
     if isinstance(params, dict):
         params = EvalParams(**params)
 

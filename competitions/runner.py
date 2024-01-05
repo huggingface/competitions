@@ -2,13 +2,11 @@ import glob
 import io
 import json
 import os
-import random
-import string
 import time
 from dataclasses import dataclass
 
 import pandas as pd
-from huggingface_hub import HfApi, snapshot_download
+from huggingface_hub import HfApi, hf_hub_download, snapshot_download
 from loguru import logger
 
 from competitions.info import CompetitionInfo
@@ -18,7 +16,7 @@ from competitions.utils import run_evaluation
 _DOCKERFILE = """
 FROM huggingface/competitions:latest
 
-CMD uvicorn competitions.app:app --port 7860 --host 0.0.0.0
+CMD uvicorn competitions.api:api --port 7860 --host 0.0.0.0
 """
 
 # format _DOCKERFILE
@@ -59,6 +57,8 @@ class JobRunner:
                             "submission_id": sub["submission_id"],
                             "datetime": sub["datetime"],
                             "submission_repo": sub["submission_repo"],
+                            "space_id": sub["space_id"],
+                            "space_status": sub["space_status"],
                         }
                     )
         if len(pending_submissions) == 0:
@@ -105,23 +105,8 @@ class JobRunner:
         _readme = io.BytesIO(_readme.encode())
         return _readme
 
-    def create_space(self, team_id, submission_id, submission_repo):
-        project_name = "".join(
-            random.choices(
-                string.ascii_lowercase + string.digits,
-                k=10,
-            )
-        )
+    def create_space(self, team_id, submission_id, submission_repo, space_id):
         api = HfApi(token=self.token)
-        username = self.competition_id.split("/")[0]
-        repo_id = f"{username}/competitions-{project_name}"
-        api.create_repo(
-            repo_id=repo_id,
-            repo_type="space",
-            space_sdk="docker",
-            space_hardware="cpu-basic",
-            private=True,
-        )
         params = {
             "competition_id": self.competition_id,
             "competition_type": self.competition_type,
@@ -136,13 +121,13 @@ class JobRunner:
             "submission_repo": submission_repo,
         }
 
-        api.add_space_secret(repo_id=repo_id, key="PARAMS", value=json.dumps(params))
+        api.add_space_secret(repo_id=space_id, key="PARAMS", value=json.dumps(params))
 
-        readme = self._create_readme(project_name)
+        readme = self._create_readme(space_id.split("/")[-1])
         api.upload_file(
             path_or_fileobj=readme,
             path_in_repo="README.md",
-            repo_id=repo_id,
+            repo_id=space_id,
             repo_type="space",
         )
 
@@ -150,10 +135,35 @@ class JobRunner:
         api.upload_file(
             path_or_fileobj=_dockerfile,
             path_in_repo="Dockerfile",
-            repo_id=repo_id,
+            repo_id=space_id,
             repo_type="space",
         )
-        return repo_id
+
+        # update space_status in submission_info
+        team_fname = hf_hub_download(
+            repo_id=self.competition_id,
+            filename=f"submission_info/{team_id}.json",
+            token=self.token,
+            repo_type="dataset",
+        )
+        with open(team_fname, "r", encoding="utf-8") as f:
+            team_submission_info = json.load(f)
+
+        for submission in team_submission_info["submissions"]:
+            if submission["submission_id"] == submission_id:
+                submission["space_status"] = 1
+                break
+
+        team_submission_info_json = json.dumps(team_submission_info, indent=4)
+        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
+        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
+        api = HfApi(token=self.token)
+        api.upload_file(
+            path_or_fileobj=team_submission_info_json_buffer,
+            path_in_repo=f"submission_info/{team_id}.json",
+            repo_id=self.competition_id,
+            repo_type="dataset",
+        )
 
     def run(self):
         while True:
@@ -168,5 +178,8 @@ class JobRunner:
                     team_id = row["team_id"]
                     submission_id = row["submission_id"]
                     submission_repo = row["submission_repo"]
-                    self.create_space(team_id, submission_id, submission_repo)
+                    space_id = row["space_id"]
+                    space_status = row["space_status"]
+                    if space_status == 0:
+                        self.create_space(team_id, submission_id, submission_repo, space_id)
             time.sleep(5)

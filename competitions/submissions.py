@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import pandas as pd
-from huggingface_hub import HfApi, hf_hub_download, snapshot_download
+from huggingface_hub import HfApi, hf_hub_download
 from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
 
@@ -133,9 +133,20 @@ class Submissions:
                 todays_submissions += 1
         return todays_submissions
 
-    def _increment_submissions(self, team_id, user_id, submission_id, submission_comment, submission_repo=None):
+    def _increment_submissions(
+        self,
+        team_id,
+        user_id,
+        submission_id,
+        submission_comment,
+        submission_repo=None,
+        space_id=None,
+        space_status=0,
+    ):
         if submission_repo is None:
             submission_repo = ""
+        if space_id is None:
+            space_id = ""
         team_fname = hf_hub_download(
             repo_id=self.competition_id,
             filename=f"submission_info/{team_id}.json",
@@ -153,11 +164,13 @@ class Submissions:
                 "submission_id": submission_id,
                 "submission_comment": submission_comment,
                 "submission_repo": submission_repo,
+                "space_id": space_id,
                 "submitted_by": user_id,
                 "status": "pending",
                 "selected": False,
                 "public_score": -1,
                 "private_score": -1,
+                "space_status": space_status,
             }
         )
         # count the number of times user has submitted today
@@ -227,9 +240,7 @@ class Submissions:
             repo_type="dataset",
         )
 
-    def _get_team_subs(self, user_info, private=False):
-        user_id = user_info["id"]
-        team_id = self._get_team_id(user_id)
+    def _get_team_subs(self, team_id, private=False):
         try:
             team_submissions = self._download_team_subs(team_id)
         except EntryNotFoundError:
@@ -319,7 +330,8 @@ class Submissions:
         private = False
         if current_date_time >= self.end_date:
             private = True
-        success_subs, failed_subs = self._get_team_subs(user_info, private=private)
+        team_id = self._get_team_id(user_info["id"])
+        success_subs, failed_subs = self._get_team_subs(team_id, private=private)
         return success_subs, failed_subs
 
     def _get_team_id(self, user_id):
@@ -381,33 +393,48 @@ class Submissions:
                 user_id=user_id,
                 submission_id=submission_id,
                 submission_comment=submission_comment,
-                submission_repo="",
             )
         else:
-            submission_repo = snapshot_download(
-                repo_id=uploaded_file,
-                local_dir=submission_id,
-                token=user_token,
-                repo_type="model",
-            )
+            # Download the submission repo and upload it to the competition repo
+            # submission_repo = snapshot_download(
+            #     repo_id=uploaded_file,
+            #     local_dir=submission_id,
+            #     token=user_token,
+            #     repo_type="model",
+            # )
+            # api = HfApi(token=self.token)
+            # competition_user = self.competition_id.split("/")[0]
+            # api.create_repo(
+            #     repo_id=f"{competition_user}/{submission_id}",
+            #     repo_type="model",
+            #     private=True,
+            # )
+            # api.upload_folder(
+            #     folder_path=submission_repo,
+            #     repo_id=f"{competition_user}/{submission_id}",
+            #     repo_type="model",
+            # )
+            # create barebones submission runner space
+            competition_organizer = self.competition_id.split("/")[0]
+            space_id = f"{competition_organizer}/comp-{submission_id}"
             api = HfApi(token=self.token)
-            competition_user = self.competition_id.split("/")[0]
             api.create_repo(
-                repo_id=f"{competition_user}/{submission_id}",
-                repo_type="model",
+                repo_id=space_id,
+                repo_type="space",
+                space_sdk="docker",
+                space_hardware="cpu-basic",
                 private=True,
             )
-            api.upload_folder(
-                folder_path=submission_repo,
-                repo_id=f"{competition_user}/{submission_id}",
-                repo_type="model",
-            )
+
+            api.add_space_secret(repo_id=space_id, key="USER_TOKEN", value=user_token)
             submissions_made = self._increment_submissions(
                 team_id=team_id,
                 user_id=user_id,
                 submission_id=submission_id,
                 submission_comment=submission_comment,
                 submission_repo=uploaded_file,
+                space_id=space_id,
+                space_status=0,
             )
         remaining_submissions = self.submission_limit - submissions_made
         return remaining_submissions

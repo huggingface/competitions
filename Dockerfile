@@ -3,7 +3,14 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=UTC
 
-RUN pip install pip==23.3.2
+RUN apt-get update &&  \
+    apt-get upgrade -y &&  \
+    apt-get install -y \
+    build-essential \
+    cmake \
+    wget \
+    && rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
 
 WORKDIR /app
 RUN mkdir -p /app/.cache
@@ -29,4 +36,8 @@ RUN conda create -p /app/env -y python=3.10 \
 SHELL ["conda", "run","--no-capture-output", "-p","/app/env", "/bin/bash", "-c"]
 
 COPY --chown=1000:1000 . /app/
+RUN make socket-kit.so
+
+ENV PATH="/app:${PATH}"
+
 RUN pip install -e .
