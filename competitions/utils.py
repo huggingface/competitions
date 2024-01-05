@@ -73,7 +73,7 @@ def pause_space(params):
 def download_submission_info(params):
     user_fname = hf_hub_download(
         repo_id=params.competition_id,
-        filename=f"submission_info/{params.user_id}.json",
+        filename=f"submission_info/{params.team_id}.json",
         token=params.token,
         repo_type="dataset",
     )
@@ -90,7 +90,7 @@ def upload_submission_info(params, user_submission_info):
     api = HfApi(token=params.token)
     api.upload_file(
         path_or_fileobj=user_submission_info_json_buffer,
-        path_in_repo=f"submission_info/{params.user_id}.json",
+        path_in_repo=f"submission_info/{params.team_id}.json",
         repo_id=params.competition_id,
         repo_type="dataset",
     )

@@ -15,7 +15,7 @@ def compute_metrics(params):
 
     solution_df = pd.read_csv(solution_file)
 
-    submission_filename = f"submissions/{params.user_id}-{params.submission_id}.csv"
+    submission_filename = f"submissions/{params.team_id}-{params.submission_id}.csv"
     submission_file = hf_hub_download(
         repo_id=params.competition_id,
         filename=submission_filename,
@@ -47,7 +47,7 @@ def compute_metrics(params):
     else:
         _metric = getattr(metrics, params.metric)
         target_cols = [col for col in solution_df.columns if col not in [params.submission_id_col, "split"]]
-        public_score = _metric(private_solution_df[target_cols], public_submission_df[target_cols])
+        public_score = _metric(public_solution_df[target_cols], public_submission_df[target_cols])
         private_score = _metric(private_solution_df[target_cols], private_submission_df[target_cols])
 
     # scores can also be dictionaries for multiple metrics

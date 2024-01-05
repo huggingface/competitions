@@ -85,10 +85,6 @@ class CompetitionInfo:
         return self.competition_desc
 
     @property
-    def competition_name(self):
-        return self.config["COMPETITION_NAME"]
-
-    @property
     def submission_columns(self):
         return self.config["SUBMISSION_COLUMNS"].split(",")
 

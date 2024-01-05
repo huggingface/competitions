@@ -1,7 +1,8 @@
 import argparse
 import json
+import subprocess
 
-from huggingface_hub import snapshot_download
+from huggingface_hub import HfApi, snapshot_download
 from loguru import logger
 
 from competitions import utils
@@ -15,12 +16,32 @@ def parse_args():
     return parser.parse_args()
 
 
+def upload_submission_file(params, file_path):
+    logger.info("Uploading submission file")
+    pass
+
+
 def generate_submission_file(params):
+    base_user = params.competition_id.split("/")[0]
     logger.info("Downloading submission dataset")
-    snapshot_download(
-        repo_id=params.data_path,
+    submission_dir = snapshot_download(
+        repo_id=f"{base_user}/{params.submission_id}",
         local_dir=params.output_path,
         token=params.token,
+        repo_type="model",
+    )
+    # submission_dir has a script.py file
+    # start a subprocess to run the script.py
+    # the script.py will generate a submission.csv file in the submission_dir
+    # push the submission.csv file to the repo using upload_submission_file
+    logger.info("Generating submission file")
+    subprocess.run(["python", "script.py"], cwd=submission_dir)
+
+    api = HfApi(token=params.token)
+    api.upload_file(
+        path_or_fileobj=f"{submission_dir}/submission.csv",
+        path_in_repo=f"submissions/{params.team_id}-{params.submission_id}.csv",
+        repo_id=params.competition_id,
         repo_type="dataset",
     )
 
@@ -35,9 +56,9 @@ def run(params):
     if params.competition_type == "code":
         generate_submission_file(params)
 
-    public_score, private_score = compute_metrics(params)
+    evaluation = compute_metrics(params)
 
-    utils.update_submission_score(params, public_score, private_score)
+    utils.update_submission_score(params, evaluation["public_score"], evaluation["private_score"])
     utils.update_submission_status(params, "success")
     utils.pause_space(params)
 

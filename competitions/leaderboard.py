@@ -25,13 +25,13 @@ class Leaderboard:
     def _refresh_columns(self):
         self.private_columns = [
             "rank",
-            "name",
+            "id",
             "private_score",
             "submission_datetime",
         ]
         self.public_columns = [
             "rank",
-            "name",
+            "id",
             "public_score",
             "submission_datetime",
         ]
@@ -49,14 +49,16 @@ class Leaderboard:
         start_time = time.time()
         submissions = []
         for submission in glob.glob(os.path.join(submissions_folder, "submission_info", "*.json")):
-            with open(submission, "r") as f:
+            with open(submission, "r", encoding="utf-8") as f:
                 submission_info = json.load(f)
             # only select submissions that are done
-            submission_info["submissions"] = [sub for sub in submission_info["submissions"] if sub["status"] == "done"]
+            submission_info["submissions"] = [
+                sub for sub in submission_info["submissions"] if sub["status"] == "success"
+            ]
             submission_info["submissions"] = [
                 sub
                 for sub in submission_info["submissions"]
-                if datetime.strptime(sub["date"], "%Y-%m-%d") < self.end_date
+                if datetime.strptime(sub["datetime"], "%Y-%m-%d %H:%M:%S") < self.end_date
             ]
             if len(submission_info["submissions"]) == 0:
                 continue
@@ -83,15 +85,13 @@ class Leaderboard:
             submission_info["submissions"] = submission_info["submissions"][0]
             temp_info = {
                 "id": submission_info["id"],
-                "name": submission_info["name"],
                 "submission_id": submission_info["submissions"]["submission_id"],
                 "submission_comment": submission_info["submissions"]["submission_comment"],
                 "status": submission_info["submissions"]["status"],
                 "selected": submission_info["submissions"]["selected"],
                 "public_score": submission_info["submissions"]["public_score"],
                 # "private_score": submission_info["submissions"]["private_score"],
-                "submission_date": submission_info["submissions"]["date"],
-                "submission_time": submission_info["submissions"]["time"],
+                "submission_datetime": submission_info["submissions"]["datetime"],
             }
             for score in other_scores:
                 temp_info[score] = submission_info["submissions"][score]
@@ -112,10 +112,10 @@ class Leaderboard:
         start_time = time.time()
         submissions = []
         for submission in glob.glob(os.path.join(submissions_folder, "submission_info", "*.json")):
-            with open(submission, "r") as f:
+            with open(submission, "r", encoding="utf-8") as f:
                 submission_info = json.load(f)
                 submission_info["submissions"] = [
-                    sub for sub in submission_info["submissions"] if sub["status"] == "done"
+                    sub for sub in submission_info["submissions"] if sub["status"] == "success"
                 ]
                 if len(submission_info["submissions"]) == 0:
                     continue
@@ -146,8 +146,7 @@ class Leaderboard:
                 if selected_submissions == 0:
                     # select submissions with best public score
                     submission_info["submissions"].sort(
-                        key=lambda x: x["public_score"],
-                        reverse=True if self.eval_higher_is_better else False,
+                        key=lambda x: x["public_score"], reverse=self.eval_higher_is_better
                     )
                     # select only the best submission
                     submission_info["submissions"] = submission_info["submissions"][0]
@@ -156,8 +155,7 @@ class Leaderboard:
                     submission_info["submissions"] = [sub for sub in submission_info["submissions"] if sub["selected"]]
                     # sort by private score
                     submission_info["submissions"].sort(
-                        key=lambda x: x["private_score"],
-                        reverse=True if self.eval_higher_is_better else False,
+                        key=lambda x: x["private_score"], reverse=self.eval_higher_is_better
                     )
                     # select only the best submission
                     submission_info["submissions"] = submission_info["submissions"][0]
@@ -167,28 +165,24 @@ class Leaderboard:
                         sub for sub in submission_info["submissions"] if not sub["selected"]
                     ]
                     temp_best_public_submissions.sort(
-                        key=lambda x: x["public_score"],
-                        reverse=True if self.eval_higher_is_better else False,
+                        key=lambda x: x["public_score"], reverse=self.eval_higher_is_better
                     )
                     missing_candidates = self.max_selected_submissions - len(temp_selected_submissions)
                     temp_best_public_submissions = temp_best_public_submissions[:missing_candidates]
                     submission_info["submissions"] = temp_selected_submissions + temp_best_public_submissions
                     submission_info["submissions"].sort(
-                        key=lambda x: x["private_score"],
-                        reverse=True if self.eval_higher_is_better else False,
+                        key=lambda x: x["private_score"], reverse=self.eval_higher_is_better
                     )
                     submission_info["submissions"] = submission_info["submissions"][0]
 
                 temp_info = {
                     "id": submission_info["id"],
-                    "name": submission_info["name"],
                     "submission_id": submission_info["submissions"]["submission_id"],
                     "submission_comment": submission_info["submissions"]["submission_comment"],
                     "status": submission_info["submissions"]["status"],
                     "selected": submission_info["submissions"]["selected"],
                     "private_score": submission_info["submissions"]["private_score"],
-                    "submission_date": submission_info["submissions"]["date"],
-                    "submission_time": submission_info["submissions"]["time"],
+                    "submission_datetime": submission_info["submissions"]["datetime"],
                 }
                 for score in other_scores:
                     temp_info[score] = submission_info["submissions"][score]
@@ -206,10 +200,10 @@ class Leaderboard:
             return pd.DataFrame()
 
         df = pd.DataFrame(submissions)
-        # convert submission date and time to datetime
-        df["submission_datetime"] = pd.to_datetime(
-            df["submission_date"] + " " + df["submission_time"], format="%Y-%m-%d %H:%M:%S"
-        )
+
+        # convert submission datetime to pandas datetime
+        df["submission_datetime"] = pd.to_datetime(df["submission_datetime"], format="%Y-%m-%d %H:%M:%S")
+
         # only keep submissions before the end date
         df = df[df["submission_datetime"] < self.end_date].reset_index(drop=True)
 
@@ -254,7 +248,6 @@ class Leaderboard:
         columns = self.public_columns if not private else self.private_columns
         logger.info(columns)
         # remove duplicate columns
-        # ['rank', 'name', 'public_score', 'submission_datetime', 'public_score_track1', 'public_score_track1', 'public_score_track1', 'public_score_track1']
         columns = list(dict.fromkeys(columns))
 
         # send submission_datetime to the end

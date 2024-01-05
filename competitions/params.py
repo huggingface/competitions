@@ -9,12 +9,13 @@ class EvalParams(BaseModel):
     competition_type: str
     metric: str
     token: str
-    user_id: str
+    team_id: str
     submission_id: str
     submission_id_col: str
     submission_cols: List[str]
     submission_rows: int
     output_path: str
+    submission_repo: str
 
     class Config:
         protected_namespaces = ()

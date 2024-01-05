@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import pandas as pd
-from huggingface_hub import HfApi, hf_hub_download
+from huggingface_hub import HfApi, hf_hub_download, snapshot_download
 from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
 
@@ -16,6 +16,7 @@ from .utils import user_authentication
 @dataclass
 class Submissions:
     competition_id: str
+    competition_type: str
     submission_limit: str
     end_date: datetime
     token: str
@@ -42,38 +43,35 @@ class Submissions:
     def _verify_submission(self, bytes_data):
         return True
 
-    def _add_new_user(self, user_info):
+    def _add_new_team(self, team_id):
         api = HfApi(token=self.token)
-        user_submission_info = {}
-        user_submission_info["name"] = user_info["name"]
-        user_submission_info["id"] = user_info["id"]
-        user_submission_info["submissions"] = []
-        # convert user_submission_info to BufferedIOBase file object
-        user_submission_info_json = json.dumps(user_submission_info, indent=4)
-        user_submission_info_json_bytes = user_submission_info_json.encode("utf-8")
-        user_submission_info_json_buffer = io.BytesIO(user_submission_info_json_bytes)
+        team_submission_info = {}
+        team_submission_info["id"] = team_id
+        team_submission_info["submissions"] = []
+        team_submission_info_json = json.dumps(team_submission_info, indent=4)
+        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
+        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
 
         api.upload_file(
-            path_or_fileobj=user_submission_info_json_buffer,
-            path_in_repo=f"submission_info/{user_info['id']}.json",
+            path_or_fileobj=team_submission_info_json_buffer,
+            path_in_repo=f"submission_info/{team_id}.json",
             repo_id=self.competition_id,
             repo_type="dataset",
         )
 
-    def _check_user_submission_limit(self, user_info):
-        user_id = user_info["id"]
+    def _check_team_submission_limit(self, team_id):
         try:
-            user_fname = hf_hub_download(
+            team_fname = hf_hub_download(
                 repo_id=self.competition_id,
-                filename=f"submission_info/{user_id}.json",
+                filename=f"submission_info/{team_id}.json",
                 token=self.token,
                 repo_type="dataset",
             )
         except EntryNotFoundError:
-            self._add_new_user(user_info)
-            user_fname = hf_hub_download(
+            self._add_new_team(team_id)
+            team_fname = hf_hub_download(
                 repo_id=self.competition_id,
-                filename=f"submission_info/{user_id}.json",
+                filename=f"submission_info/{team_id}.json",
                 token=self.token,
                 repo_type="dataset",
             )
@@ -81,36 +79,37 @@ class Submissions:
             logger.error(e)
             raise Exception("Hugging Face Hub is unreachable, please try again later.")
 
-        with open(user_fname, "r", encoding="utf-8") as f:
-            user_submission_info = json.load(f)
+        with open(team_fname, "r", encoding="utf-8") as f:
+            team_submission_info = json.load(f)
 
         todays_date = datetime.now().strftime("%Y-%m-%d")
-        if len(user_submission_info["submissions"]) == 0:
-            user_submission_info["submissions"] = []
+        if len(team_submission_info["submissions"]) == 0:
+            team_submission_info["submissions"] = []
 
         # count the number of times user has submitted today
         todays_submissions = 0
-        for sub in user_submission_info["submissions"]:
-            if sub["date"] == todays_date:
+        for sub in team_submission_info["submissions"]:
+            submission_datetime = sub["datetime"]
+            submission_date = submission_datetime.split(" ")[0]
+            if submission_date == todays_date:
                 todays_submissions += 1
         if todays_submissions >= self.submission_limit:
             return False
         return True
 
-    def _submissions_today(self, user_info):
-        user_id = user_info["id"]
+    def _submissions_today(self, team_id):
         try:
-            user_fname = hf_hub_download(
+            team_fname = hf_hub_download(
                 repo_id=self.competition_id,
-                filename=f"submission_info/{user_id}.json",
+                filename=f"submission_info/{team_id}.json",
                 token=self.token,
                 repo_type="dataset",
             )
         except EntryNotFoundError:
-            self._add_new_user(user_info)
-            user_fname = hf_hub_download(
+            self._add_new_team(team_id)
+            team_fname = hf_hub_download(
                 repo_id=self.competition_id,
-                filename=f"submission_info/{user_id}.json",
+                filename=f"submission_info/{team_id}.json",
                 token=self.token,
                 repo_type="dataset",
             )
@@ -118,39 +117,43 @@ class Submissions:
             logger.error(e)
             raise Exception("Hugging Face Hub is unreachable, please try again later.")
 
-        with open(user_fname, "r", encoding="utf-8") as f:
-            user_submission_info = json.load(f)
+        with open(team_fname, "r", encoding="utf-8") as f:
+            team_submission_info = json.load(f)
 
         todays_date = datetime.now().strftime("%Y-%m-%d")
-        if len(user_submission_info["submissions"]) == 0:
-            user_submission_info["submissions"] = []
+        if len(team_submission_info["submissions"]) == 0:
+            team_submission_info["submissions"] = []
 
         # count the number of times user has submitted today
         todays_submissions = 0
-        for sub in user_submission_info["submissions"]:
-            if sub["date"] == todays_date:
+        for sub in team_submission_info["submissions"]:
+            submission_datetime = sub["datetime"]
+            submission_date = submission_datetime.split(" ")[0]
+            if submission_date == todays_date:
                 todays_submissions += 1
         return todays_submissions
 
-    def _increment_submissions(self, user_id, submission_id, submission_comment):
-        user_fname = hf_hub_download(
+    def _increment_submissions(self, team_id, user_id, submission_id, submission_comment, submission_repo=None):
+        if submission_repo is None:
+            submission_repo = ""
+        team_fname = hf_hub_download(
             repo_id=self.competition_id,
-            filename=f"submission_info/{user_id}.json",
+            filename=f"submission_info/{team_id}.json",
             token=self.token,
             repo_type="dataset",
         )
-        with open(user_fname, "r", encoding="utf-8") as f:
-            user_submission_info = json.load(f)
-        todays_date = datetime.now().strftime("%Y-%m-%d")
-        current_time = datetime.now().strftime("%H:%M:%S")
+        with open(team_fname, "r", encoding="utf-8") as f:
+            team_submission_info = json.load(f)
+        datetime_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # here goes all the default stuff for submission
-        user_submission_info["submissions"].append(
+        team_submission_info["submissions"].append(
             {
-                "date": todays_date,
-                "time": current_time,
+                "datetime": datetime_now,
                 "submission_id": submission_id,
                 "submission_comment": submission_comment,
+                "submission_repo": submission_repo,
+                "submitted_by": user_id,
                 "status": "pending",
                 "selected": False,
                 "public_score": -1,
@@ -159,33 +162,35 @@ class Submissions:
         )
         # count the number of times user has submitted today
         todays_submissions = 0
-        for sub in user_submission_info["submissions"]:
-            if sub["date"] == todays_date:
+        todays_date = datetime.now().strftime("%Y-%m-%d")
+        for sub in team_submission_info["submissions"]:
+            submission_datetime = sub["datetime"]
+            submission_date = submission_datetime.split(" ")[0]
+            if submission_date == todays_date:
                 todays_submissions += 1
 
-        # convert user_submission_info to BufferedIOBase file object
-        user_submission_info_json = json.dumps(user_submission_info, indent=4)
-        user_submission_info_json_bytes = user_submission_info_json.encode("utf-8")
-        user_submission_info_json_buffer = io.BytesIO(user_submission_info_json_bytes)
+        team_submission_info_json = json.dumps(team_submission_info, indent=4)
+        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
+        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
         api = HfApi(token=self.token)
         api.upload_file(
-            path_or_fileobj=user_submission_info_json_buffer,
-            path_in_repo=f"submission_info/{user_id}.json",
+            path_or_fileobj=team_submission_info_json_buffer,
+            path_in_repo=f"submission_info/{team_id}.json",
             repo_id=self.competition_id,
             repo_type="dataset",
         )
         return todays_submissions
 
-    def _download_user_subs(self, user_id):
-        user_fname = hf_hub_download(
+    def _download_team_subs(self, team_id):
+        team_fname = hf_hub_download(
             repo_id=self.competition_id,
-            filename=f"submission_info/{user_id}.json",
+            filename=f"submission_info/{team_id}.json",
             token=self.token,
             repo_type="dataset",
         )
-        with open(user_fname, "r", encoding="utf-8") as f:
-            user_submission_info = json.load(f)
-        return user_submission_info["submissions"]
+        with open(team_fname, "r", encoding="utf-8") as f:
+            team_submission_info = json.load(f)
+        return team_submission_info["submissions"]
 
     def update_selected_submissions(self, user_token, selected_submission_ids):
         current_datetime = datetime.now()
@@ -194,44 +199,44 @@ class Submissions:
 
         user_info = self._get_user_info(user_token)
         user_id = user_info["id"]
+        team_id = self._get_team_id(user_id)
 
-        user_fname = hf_hub_download(
+        team_fname = hf_hub_download(
             repo_id=self.competition_id,
-            filename=f"submission_info/{user_id}.json",
+            filename=f"submission_info/{team_id}.json",
             token=self.token,
             repo_type="dataset",
         )
-        with open(user_fname, "r", encoding="utf-8") as f:
-            user_submission_info = json.load(f)
+        with open(team_fname, "r", encoding="utf-8") as f:
+            team_submission_info = json.load(f)
 
-        for sub in user_submission_info["submissions"]:
+        for sub in team_submission_info["submissions"]:
             if sub["submission_id"] in selected_submission_ids:
                 sub["selected"] = True
             else:
                 sub["selected"] = False
 
-        # convert user_submission_info to BufferedIOBase file object
-        user_submission_info_json = json.dumps(user_submission_info, indent=4)
-        user_submission_info_json_bytes = user_submission_info_json.encode("utf-8")
-        user_submission_info_json_buffer = io.BytesIO(user_submission_info_json_bytes)
+        team_submission_info_json = json.dumps(team_submission_info, indent=4)
+        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
+        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
         api = HfApi(token=self.token)
         api.upload_file(
-            path_or_fileobj=user_submission_info_json_buffer,
-            path_in_repo=f"submission_info/{user_id}.json",
+            path_or_fileobj=team_submission_info_json_buffer,
+            path_in_repo=f"submission_info/{team_id}.json",
             repo_id=self.competition_id,
             repo_type="dataset",
         )
 
-    def _get_user_subs(self, user_info, private=False):
-        # get user submissions
+    def _get_team_subs(self, user_info, private=False):
         user_id = user_info["id"]
+        team_id = self._get_team_id(user_id)
         try:
-            user_submissions = self._download_user_subs(user_id)
+            team_submissions = self._download_team_subs(team_id)
         except EntryNotFoundError:
             logger.warning("No submissions found for user")
             return pd.DataFrame(), pd.DataFrame()
 
-        submissions_df = pd.DataFrame(user_submissions)
+        submissions_df = pd.DataFrame(team_submissions)
 
         if not private:
             submissions_df = submissions_df.drop(columns=["private_score"])
@@ -314,47 +319,95 @@ class Submissions:
         private = False
         if current_date_time >= self.end_date:
             private = True
-        success_subs, failed_subs = self._get_user_subs(user_info, private=private)
+        success_subs, failed_subs = self._get_team_subs(user_info, private=private)
         return success_subs, failed_subs
+
+    def _get_team_id(self, user_id):
+        user_team = hf_hub_download(
+            repo_id=self.competition_id,
+            filename="user_team.json",
+            token=self.token,
+            repo_type="dataset",
+        )
+        with open(user_team, "r", encoding="utf-8") as f:
+            user_team = json.load(f)
+
+        if user_id in user_team:
+            return user_team[user_id]
+
+        # create a new team, if user is not in any team
+        team_id = str(uuid.uuid4())
+        user_team[user_id] = team_id
+        user_team_json = json.dumps(user_team, indent=4)
+        user_team_json_bytes = user_team_json.encode("utf-8")
+        user_team_json_buffer = io.BytesIO(user_team_json_bytes)
+        api = HfApi(token=self.token)
+        api.upload_file(
+            path_or_fileobj=user_team_json_buffer,
+            path_in_repo="user_team.json",
+            repo_id=self.competition_id,
+            repo_type="dataset",
+        )
+        return team_id
 
     def new_submission(self, user_token, uploaded_file, submission_comment):
         # verify token
         user_info = self._get_user_info(user_token)
+        submission_id = str(uuid.uuid4())
+        user_id = user_info["id"]
+        team_id = self._get_team_id(user_id)
 
-        # check if user can submit to the competition
-        if self._check_user_submission_limit(user_info) is False:
+        # check if team can submit to the competition
+        if self._check_team_submission_limit(team_id) is False:
             raise SubmissionLimitError("Submission limit reached")
 
-        logger.info(type(uploaded_file))
-        bytes_data = uploaded_file.file.read()
+        if self.competition_type == "generic":
+            bytes_data = uploaded_file.file.read()
+            # verify file is valid
+            if not self._verify_submission(bytes_data):
+                raise SubmissionError("Invalid submission file")
 
-        # verify file is valid
-        if not self._verify_submission(bytes_data):
-            raise SubmissionError("Invalid submission file")
-        else:
-            user_id = user_info["id"]
-            submission_id = str(uuid.uuid4())
             file_extension = uploaded_file.filename.split(".")[-1]
             # upload file to hf hub
             api = HfApi(token=self.token)
             api.upload_file(
                 path_or_fileobj=bytes_data,
-                path_in_repo=f"submissions/{user_id}-{submission_id}.{file_extension}",
+                path_in_repo=f"submissions/{team_id}-{submission_id}.{file_extension}",
                 repo_id=self.competition_id,
                 repo_type="dataset",
             )
-            # update submission limit
             submissions_made = self._increment_submissions(
+                team_id=team_id,
                 user_id=user_id,
                 submission_id=submission_id,
-                submission_comment="",
+                submission_comment=submission_comment,
+                submission_repo="",
             )
-            # TODO: schedule submission for evaluation
-            # self._create_autotrain_project(
-            #     submission_id=f"{submission_id}",
-            #     competition_id=f"{self.competition_id}",
-            #     user_id=user_id,
-            #     competition_type="generic",
-            # )
+        else:
+            submission_repo = snapshot_download(
+                repo_id=uploaded_file,
+                local_dir=submission_id,
+                token=user_token,
+                repo_type="model",
+            )
+            api = HfApi(token=self.token)
+            competition_user = self.competition_id.split("/")[0]
+            api.create_repo(
+                repo_id=f"{competition_user}/{submission_id}",
+                repo_type="model",
+                private=True,
+            )
+            api.upload_folder(
+                folder_path=submission_repo,
+                repo_id=f"{competition_user}/{submission_id}",
+                repo_type="model",
+            )
+            submissions_made = self._increment_submissions(
+                team_id=team_id,
+                user_id=user_id,
+                submission_id=submission_id,
+                submission_comment=submission_comment,
+                submission_repo=uploaded_file,
+            )
         remaining_submissions = self.submission_limit - submissions_made
         return remaining_submissions

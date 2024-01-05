@@ -5,6 +5,7 @@ from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from loguru import logger
 from pydantic import BaseModel
 
 from competitions.info import CompetitionInfo
@@ -83,6 +84,7 @@ async def get_leaderboard(request: Request, lb: str):
         autotrain_token=HF_TOKEN,
     )
     df = leaderboard.fetch(private=lb == "private")
+    logger.info(df)
     resp = {"response": df.to_markdown(index=False)}
     return resp
 
@@ -94,6 +96,7 @@ async def my_submissions(request: Request, user: User):
         submission_limit=COMP_INFO.submission_limit,
         competition_id=COMPETITION_ID,
         token=HF_TOKEN,
+        competition_type=COMP_INFO.competition_type,
     )
     success_subs, failed_subs = sub.my_submissions(user.user_token)
     success_subs = success_subs.to_markdown(index=False)
@@ -107,7 +110,7 @@ async def my_submissions(request: Request, user: User):
 
 @app.post("/new_submission", response_class=JSONResponse)
 async def new_submission(
-    submission_file: UploadFile = File(...),
+    submission_file: UploadFile = File(None),
     hub_model: str = Form(...),
     token: str = Form(...),
     submission_comment: str = Form(...),
@@ -117,6 +120,7 @@ async def new_submission(
         submission_limit=COMP_INFO.submission_limit,
         competition_id=COMPETITION_ID,
         token=HF_TOKEN,
+        competition_type=COMP_INFO.competition_type,
     )
     if COMP_INFO.competition_type == "generic":
         resp = sub.new_submission(token, submission_file, submission_comment)
