@@ -121,3 +121,7 @@ class CompetitionInfo:
     @property
     def submission_rows(self):
         return self.config["SUBMISSION_ROWS"]
+
+    @property
+    def time_limit(self):
+        return self.config["TIME_LIMIT"]

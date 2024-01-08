@@ -36,13 +36,32 @@ def generate_submission_file(params):
     # the script.py will generate a submission.csv file in the submission_dir
     # push the submission.csv file to the repo using upload_submission_file
     logger.info("Generating submission file")
-    # copy socket-kit.so to submission_dir
+
+    # Copy socket-kit.so to submission_dir
     shutil.copyfile("socket-kit.so", f"{submission_dir}/socket-kit.so")
+
+    # Define your command
     cmd = "python script.py"
     socket_kit_path = os.path.abspath(f"{submission_dir}/socket-kit.so")
+
+    # Copy the current environment and modify it
     env = os.environ.copy()
     env["LD_PRELOAD"] = socket_kit_path
-    subprocess.run(cmd, cwd=submission_dir, shell=True, check=True, env=env)
+
+    # Start the subprocess
+    process = subprocess.Popen(cmd, cwd=submission_dir, shell=True, env=env)
+
+    # Wait for the process to complete or timeout
+    try:
+        process.wait(timeout=params.time_limit)
+    except subprocess.TimeoutExpired:
+        logger.info(f"Process exceeded {params.time_limit} seconds time limit. Terminating...")
+        process.kill()
+        process.wait()
+
+    # Check if process terminated due to timeout
+    if process.returncode and process.returncode != 0:
+        logger.error("Subprocess didn't terminate successfully")
 
     api = HfApi(token=params.token)
     api.upload_file(

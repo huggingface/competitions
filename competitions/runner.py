@@ -36,6 +36,7 @@ class JobRunner:
         self.submission_id_col = self.competition_info.submission_id_col
         self.submission_cols = self.competition_info.submission_cols
         self.submission_rows = self.competition_info.submission_rows
+        self.time_limit = self.competition_info.time_limit
 
     def get_pending_subs(self):
         submission_jsons = snapshot_download(
@@ -62,7 +63,6 @@ class JobRunner:
                         }
                     )
         if len(pending_submissions) == 0:
-            logger.info("No pending submissions.")
             return None
         logger.info(f"Found {len(pending_submissions)} pending submissions.")
         pending_submissions = pd.DataFrame(pending_submissions)
@@ -119,6 +119,7 @@ class JobRunner:
             "submission_rows": self.submission_rows,
             "output_path": self.output_path,
             "submission_repo": submission_repo,
+            "time_limit": self.time_limit,
         }
 
         api.add_space_secret(repo_id=space_id, key="PARAMS", value=json.dumps(params))
