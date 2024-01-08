@@ -1,6 +1,7 @@
 import os
 import threading
 
+import pandas as pd
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,6 +13,7 @@ from competitions.info import CompetitionInfo
 from competitions.leaderboard import Leaderboard
 from competitions.runner import JobRunner
 from competitions.submissions import Submissions
+from competitions.text import SUBMISSION_SELECTION_TEXT, SUBMISSION_TEXT
 
 
 HF_TOKEN = os.environ.get("HF_TOKEN", None)
@@ -74,6 +76,14 @@ async def get_dataset_info(request: Request):
     return resp
 
 
+@app.get("/submission_info", response_class=JSONResponse)
+async def get_submission_info(request: Request):
+    info = COMP_INFO.submission_desc
+    # info = markdown.markdown(info)
+    resp = {"response": info}
+    return resp
+
+
 @app.get("/leaderboard/{lb}", response_class=JSONResponse)
 async def get_leaderboard(request: Request, lb: str):
     leaderboard = Leaderboard(
@@ -99,12 +109,20 @@ async def my_submissions(request: Request, user: User):
         competition_type=COMP_INFO.competition_type,
     )
     success_subs, failed_subs = sub.my_submissions(user.user_token)
-    success_subs = success_subs.to_markdown(index=False)
-    failed_subs = failed_subs.to_markdown(index=False)
-    if len(success_subs.strip()) == 0 and len(failed_subs.strip()) == 0:
-        success_subs = "You have not made any submissions yet."
+    subs = pd.concat([success_subs, failed_subs], axis=0)
+    subs = subs.to_markdown(index=False)
+    if len(subs.strip()) == 0:
+        subs = "You have not made any submissions yet."
         failed_subs = ""
-    resp = {"response": {"success": success_subs, "failed": failed_subs}}
+    submission_text = SUBMISSION_TEXT.format(COMP_INFO.submission_limit)
+    submission_selection_text = SUBMISSION_SELECTION_TEXT.format(COMP_INFO.selection_limit)
+
+    resp = {
+        "response": {
+            "submissions": subs,
+            "submission_text": submission_text + submission_selection_text,
+        }
+    }
     return resp
 
 

@@ -115,10 +115,28 @@
                     })
                     .then(data => {
                         const contentDiv = document.getElementById('content');
-                        contentDiv.innerHTML = marked.parse(data.response.success);
+                        contentDiv.innerHTML = marked.parse(data.response.submission_text) + marked.parse(data.response.submissions);
                     })
                     .catch(error => {
                         console.error('There was a problem with the fetch operation:', error);
+                    });
+            }
+
+            function fetchAndDisplaySubmissionInfo() {
+                fetch('/submission_info')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json(); // Parse the JSON response
+                    })
+                    .then(data => {
+                        // Populate the 'content' div with the HTML from the response
+                        const contentDiv = document.getElementById('content');
+                        contentDiv.innerHTML = marked.parse(data.response);
+                    })
+                    .catch(error => {
+                        console.error('There has been a problem with your fetch operation:', error);
                     });
             }
 
@@ -129,6 +147,7 @@
             const privateLBLink = document.getElementById('private_lb');
             const newSubmission = document.getElementById('new_submission');
             const mySubmissions = document.getElementById('my_submissions');
+            const submissionInfo = document.getElementById('submission_info');
 
             // Add a click event listener to the 'Home' link
             homeLink.addEventListener('click', function (event) {
@@ -158,6 +177,10 @@
             mySubmissions.addEventListener('click', function (event) {
                 event.preventDefault(); // Prevent the default link behavior
                 fetchAndDisplaySubmissions(); // Fetch and display info on click
+            });
+            submissionInfo.addEventListener('click', function (event) {
+                event.preventDefault(); // Prevent the default link behavior
+                fetchAndDisplaySubmissionInfo(); // Fetch and display info on click
             });
 
             // Fetch and display info when the page loads
@@ -252,6 +275,11 @@
                     </button>
                     <ul id="submissions-dropdown" class="hidden py-2 space-y-2">
                         <li>
+                            <a href="#" id="submission_info"
+                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Submission
+                                information</a>
+                        </li>
+                        <li>
                             <a href="#" id="my_submissions"
                                 class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">My
                                 submissions</a>
@@ -284,14 +312,21 @@
             </ul>
         </div>
     </aside>
-    <div class="p-4 sm:ml-64">
-        <img src={{logo}} alt="Competition logo" class="mx-auto mb-4">
+    <div class="p-1 sm:ml-64">
+        <img src={{logo}} alt="Competition logo" class="mx-auto">
+        <hr class="mt-3 mb-2">
         <article class="prose max-w-5xl" id="content">
         </article>
     </div>
     <div id="submission-modal" tabindex="-1"
         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div id="loadingSpinner" role="status"
+            class="hidden absolute -translate-x-1/2 -translate-y-1/2 top-2/4 left-1/2">
+            <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+            <span class="sr-only">Loading...</span>
+        </div>
         <div class="form-container max-w-5xl mx-auto mt-3 p-6 shadow-2xl bg-white">
+            <p class="text-lg font-medium text-gray-900">New Submission</p>
             <form action="#" method="post" class="gap-2" enctype="multipart/form-data">
                 {% if competition_type == 'generic' %}
                 <div class="form-group">
@@ -328,6 +363,9 @@
                         class="cancel text-white bg-red-600 hover:bg-red-100 focus:ring-4 focus:outline-none focus:ring-red-200 rounded-lg border border-red-200 text-sm font-medium px-5 py-2.5 hover:text-red-900 focus:z-10">Cancel</button>
                 </div>
             </form>
+            <hr class="mt-3">
+            <div id="error-message" style="color: red;"></div>
+            <div id="success-message" style="color: green;"></div>
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
@@ -337,6 +375,10 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelector('.confirm').addEventListener('click', function (event) {
             event.preventDefault();
+            document.getElementById('error-message').textContent = '';
+            document.getElementById('success-message').textContent = '';
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.classList.remove('hidden');
 
             var formData = new FormData();
             var competitionType = '{{ competition_type }}';
@@ -369,11 +411,14 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    alert(data.response);
-                    // Close the modal here if needed
+                    loadingSpinner.classList.add('hidden');
+                    document.getElementById('success-message').textContent = data.response;
+
                 })
                 .catch((error) => {
                     console.error('Error:', error);
+                    loadingSpinner.classList.add('hidden');
+                    document.getElementById('error-message').textContent = error;
                 });
         });
     });
