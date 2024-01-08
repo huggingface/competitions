@@ -5,11 +5,14 @@
 # pylint: enable=line-too-long
 """Hugging Face Competitions
 """
+import os
+
 from setuptools import find_packages, setup
 
 
-with open("README.md") as f:
-    long_description = f.read()
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
+    LONG_DESCRIPTION = f.read()
 
 QUALITY_REQUIRE = [
     "black~=22.0",
@@ -39,7 +42,7 @@ with open("requirements.txt") as f:
 setup(
     name="competitions",
     description="Hugging Face Competitions",
-    long_description=long_description,
+    long_description=LONG_DESCRIPTION,
     author="HuggingFace Inc.",
     url="https://github.com/huggingface/competitions",
     download_url="https://github.com/huggingface/competitions/tags",

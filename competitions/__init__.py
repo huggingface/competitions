@@ -1,7 +1,7 @@
 import os
 
 
-__version__ = "0.1.2.dev0"
+__version__ = "0.1.3.dev0"
 
 MOONLANDING_URL = os.getenv("MOONLANDING_URL", "https://huggingface.co")
 COMPETITION_ID = os.getenv("COMPETITION_ID")
