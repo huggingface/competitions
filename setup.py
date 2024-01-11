@@ -27,6 +27,7 @@ EXTRAS_REQUIRE = {
     "dev": QUALITY_REQUIRE,
     "quality": QUALITY_REQUIRE,
     "test": QUALITY_REQUIRE + TEST_REQUIRE,
+    "docs": QUALITY_REQUIRE + TEST_REQUIRE + ["hf-doc-builder"],
 }
 
 with open("requirements.txt", encoding="utf-8") as f:
