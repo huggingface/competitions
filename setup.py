@@ -26,7 +26,7 @@ TEST_REQUIRE = ["pytest", "pytest-cov"]
 EXTRAS_REQUIRE = {
     "dev": QUALITY_REQUIRE,
     "quality": QUALITY_REQUIRE,
-    "test": TEST_REQUIRE,
+    "test": QUALITY_REQUIRE + TEST_REQUIRE,
 }
 
 with open("requirements.txt", encoding="utf-8") as f:
