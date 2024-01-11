@@ -16,7 +16,7 @@ docker:
 	docker push huggingface/competitions:latest
 
 test:
-	pytest -sv ./competitions/
+	pytest -sv .
 
 socket-kit.so: socket-kit.c
 	gcc $(CFLAGS) -shared -fPIC $^ -o $@ -ldl
