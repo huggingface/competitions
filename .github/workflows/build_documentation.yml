@@ -15,4 +15,4 @@ jobs:
       package: competitions
       package_name: competitions
     secrets:
-      hf_token: ${{ secrets.HF_DOC_BUILD_PUSH }}
+      hf_token: ${{ secrets.HF_DOC_BUILD_PUSH }}g
