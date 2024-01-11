@@ -82,7 +82,7 @@ class Submissions:
         with open(team_fname, "r", encoding="utf-8") as f:
             team_submission_info = json.load(f)
 
-        todays_date = datetime.now().strftime("%Y-%m-%d")
+        todays_date = datetime.utcnow().strftime("%Y-%m-%d")
         if len(team_submission_info["submissions"]) == 0:
             team_submission_info["submissions"] = []
 
@@ -120,7 +120,7 @@ class Submissions:
         with open(team_fname, "r", encoding="utf-8") as f:
             team_submission_info = json.load(f)
 
-        todays_date = datetime.now().strftime("%Y-%m-%d")
+        todays_date = datetime.utcnow().strftime("%Y-%m-%d")
         if len(team_submission_info["submissions"]) == 0:
             team_submission_info["submissions"] = []
 
@@ -155,7 +155,7 @@ class Submissions:
         )
         with open(team_fname, "r", encoding="utf-8") as f:
             team_submission_info = json.load(f)
-        datetime_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        datetime_now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
         # here goes all the default stuff for submission
         team_submission_info["submissions"].append(
@@ -175,7 +175,7 @@ class Submissions:
         )
         # count the number of times user has submitted today
         todays_submissions = 0
-        todays_date = datetime.now().strftime("%Y-%m-%d")
+        todays_date = datetime.utcnow().strftime("%Y-%m-%d")
         for sub in team_submission_info["submissions"]:
             submission_datetime = sub["datetime"]
             submission_date = submission_datetime.split(" ")[0]
@@ -206,13 +206,12 @@ class Submissions:
         return team_submission_info["submissions"]
 
     def update_selected_submissions(self, user_token, selected_submission_ids):
-        current_datetime = datetime.now()
+        current_datetime = datetime.utcnow()
         if current_datetime > self.end_date:
             raise PastDeadlineError("Competition has ended.")
 
         user_info = self._get_user_info(user_token)
-        user_id = user_info["id"]
-        team_id = self._get_team_id(user_id)
+        team_id = self._get_team_id(user_info)
 
         team_fname = hf_hub_download(
             repo_id=self.competition_id,
@@ -326,15 +325,17 @@ class Submissions:
 
     def my_submissions(self, user_token):
         user_info = self._get_user_info(user_token)
-        current_date_time = datetime.now()
+        current_date_time = datetime.utcnow()
         private = False
         if current_date_time >= self.end_date:
             private = True
-        team_id = self._get_team_id(user_info["id"])
+        team_id = self._get_team_id(user_info)
         success_subs, failed_subs = self._get_team_subs(team_id, private=private)
         return success_subs, failed_subs
 
-    def _get_team_id(self, user_id):
+    def _get_team_id(self, user_info):
+        user_id = user_info["id"]
+        user_name = user_info["name"]
         user_team = hf_hub_download(
             repo_id=self.competition_id,
             filename="user_team.json",
@@ -347,12 +348,35 @@ class Submissions:
         if user_id in user_team:
             return user_team[user_id]
 
+        team_metadata = hf_hub_download(
+            repo_id=self.competition_id,
+            filename="teams.json",
+            token=self.token,
+            repo_type="dataset",
+        )
+
+        with open(team_metadata, "r", encoding="utf-8") as f:
+            team_metadata = json.load(f)
+
         # create a new team, if user is not in any team
         team_id = str(uuid.uuid4())
         user_team[user_id] = team_id
+
+        team_metadata[team_id] = {
+            "id": team_id,
+            "name": user_name,
+            "members": [user_id],
+            "leader": user_id,
+        }
+
         user_team_json = json.dumps(user_team, indent=4)
         user_team_json_bytes = user_team_json.encode("utf-8")
         user_team_json_buffer = io.BytesIO(user_team_json_bytes)
+
+        team_metadata_json = json.dumps(team_metadata, indent=4)
+        team_metadata_json_bytes = team_metadata_json.encode("utf-8")
+        team_metadata_json_buffer = io.BytesIO(team_metadata_json_bytes)
+
         api = HfApi(token=self.token)
         api.upload_file(
             path_or_fileobj=user_team_json_buffer,
@@ -360,6 +384,13 @@ class Submissions:
             repo_id=self.competition_id,
             repo_type="dataset",
         )
+        api.upload_file(
+            path_or_fileobj=team_metadata_json_buffer,
+            path_in_repo="teams.json",
+            repo_id=self.competition_id,
+            repo_type="dataset",
+        )
+
         return team_id
 
     def new_submission(self, user_token, uploaded_file, submission_comment):
@@ -367,7 +398,7 @@ class Submissions:
         user_info = self._get_user_info(user_token)
         submission_id = str(uuid.uuid4())
         user_id = user_info["id"]
-        team_id = self._get_team_id(user_id)
+        team_id = self._get_team_id(user_info)
 
         # check if team can submit to the competition
         if self._check_team_submission_limit(team_id) is False:

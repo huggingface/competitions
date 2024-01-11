@@ -87,6 +87,7 @@ class JobRunner:
                 "submission_rows": self.submission_rows,
                 "output_path": self.output_path,
                 "submission_repo": row["submission_repo"],
+                "time_limit": self.time_limit,
             }
             eval_params = json.dumps(eval_params)
             eval_pid = run_evaluation(eval_params, local=True, wait=True)

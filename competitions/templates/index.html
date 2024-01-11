@@ -23,6 +23,8 @@
             }
 
             function fetchAndDisplayCompetitionInfo() {
+                const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
+                articleLoadingSpinner.classList.remove('hidden');
                 fetch('/competition_info')
                     .then(response => {
                         if (!response.ok) {
@@ -35,13 +37,17 @@
                         const contentDiv = document.getElementById('content');
                         contentDiv.style.display = 'block';
                         contentDiv.innerHTML = marked.parse(data.response);
+                        articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
                         console.error('There has been a problem with your fetch operation:', error);
+                        articleLoadingSpinner.classList.add('hidden');
                     });
             }
 
             function fetchAndDisplayDatasetInfo() {
+                const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
+                articleLoadingSpinner.classList.remove('hidden');
                 fetch('/dataset_info')
                     .then(response => {
                         if (!response.ok) {
@@ -53,13 +59,17 @@
                         // Populate the 'content' div with the HTML from the response
                         const contentDiv = document.getElementById('content');
                         contentDiv.innerHTML = marked.parse(data.response);
+                        articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
                         console.error('There has been a problem with your fetch operation:', error);
+                        articleLoadingSpinner.classList.add('hidden');
                     });
             }
 
             function fetchAndDisplayPublicLeaderboard() {
+                const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
+                articleLoadingSpinner.classList.remove('hidden');
                 fetch('/leaderboard/public')
                     .then(response => {
                         if (!response.ok) {
@@ -71,13 +81,17 @@
                         // Populate the 'content' div with the HTML from the response
                         const contentDiv = document.getElementById('content');
                         contentDiv.innerHTML = marked.parse(data.response);
+                        articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
                         console.error('There has been a problem with your fetch operation:', error);
+                        articleLoadingSpinner.classList.add('hidden');
                     });
             }
 
             function fetchAndDisplayPrivateLeaderboard() {
+                const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
+                articleLoadingSpinner.classList.remove('hidden');
                 fetch('/leaderboard/private')
                     .then(response => {
                         if (!response.ok) {
@@ -89,14 +103,18 @@
                         // Populate the 'content' div with the HTML from the response
                         const contentDiv = document.getElementById('content');
                         contentDiv.innerHTML = marked.parse(data.response);
+                        articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
                         console.error('There has been a problem with your fetch operation:', error);
+                        articleLoadingSpinner.classList.add('hidden');
                     });
             }
             function fetchAndDisplaySubmissions() {
                 const userToken = document.getElementById('user_token').value;
                 const apiEndpoint = '/my_submissions';
+                const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
+                articleLoadingSpinner.classList.remove('hidden');
 
                 const requestOptions = {
                     method: 'POST',
@@ -116,13 +134,17 @@
                     .then(data => {
                         const contentDiv = document.getElementById('content');
                         contentDiv.innerHTML = marked.parse(data.response.submission_text) + marked.parse(data.response.submissions);
+                        articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
                         console.error('There was a problem with the fetch operation:', error);
+                        articleLoadingSpinner.classList.add('hidden');
                     });
             }
 
             function fetchAndDisplaySubmissionInfo() {
+                const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
+                articleLoadingSpinner.classList.remove('hidden');
                 fetch('/submission_info')
                     .then(response => {
                         if (!response.ok) {
@@ -134,9 +156,11 @@
                         // Populate the 'content' div with the HTML from the response
                         const contentDiv = document.getElementById('content');
                         contentDiv.innerHTML = marked.parse(data.response);
+                        articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
                         console.error('There has been a problem with your fetch operation:', error);
+                        articleLoadingSpinner.classList.add('hidden');
                     });
             }
 
@@ -194,17 +218,17 @@
     </script>
 </head>
 
-<body class="flex h-screen bg-gray-100">
+<body class="flex h-screen">
     <!-- Sidebar -->
     <aside id="sidebar-multi-level-sidebar"
         class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0"
         aria-label="Sidebar">
-        <div class="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+        <div class="h-full px-3 py-4 overflow-y-auto">
             <ul class="space-y-2 font-medium">
                 <li>
                     <a href="#" id="home"
-                        class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                        <svg class="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                        class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                        <svg class="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
                             viewBox="0 0 22 21" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
                             <path d="M1,10 L11,1 L21,10 L21,20 L1,20 Z" /> <!-- House structure -->
                             <path d="M6,20 L6,14 L16,14 L16,20" /> <!-- Door -->
@@ -215,8 +239,8 @@
                 </li>
                 <li>
                     <a href="#" id="dataset"
-                        class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                        class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
                             aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
                             viewBox="0 0 18 18">
                             <path
@@ -227,9 +251,9 @@
                 </li>
                 <li>
                     <button type="button"
-                        class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+                        class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100"
                         aria-controls="lb-dropdown" data-collapse-toggle="lb-dropdown">
-                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
                             aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
                             viewBox="0 0 18 21">
                             <path d="M2,4 L20,4 L20,16 L2,16 Z" />
@@ -242,22 +266,22 @@
                                 d="m1 1 4 4 4-4" />
                         </svg>
                     </button>
-                    <ul id="lb-dropdown" class="hidden py-2 space-y-2">
+                    <ul id="lb-dropdown" class="py-2 space-y-2">
                         <li>
                             <a href="#" id="public_lb"
-                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Public</a>
+                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">Public</a>
                         </li>
                         <li>
                             <a href="#" id="private_lb"
-                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Private</a>
+                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">Private</a>
                         </li>
                     </ul>
                 </li>
                 <li>
                     <button type="button"
-                        class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+                        class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100"
                         aria-controls="submissions-dropdown" data-collapse-toggle="submissions-dropdown">
-                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
                             aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
                             viewBox="0 0 20 20">
                             <path d="M5 5V.13a2.96 2.96 0 0 0-1.293.749L.879 3.707A2.96 2.96 0 0 0 .13 5H5Z" />
@@ -273,28 +297,28 @@
                                 d="m1 1 4 4 4-4" />
                         </svg>
                     </button>
-                    <ul id="submissions-dropdown" class="hidden py-2 space-y-2">
+                    <ul id="submissions-dropdown" class="py-2 space-y-2">
                         <li>
                             <a href="#" id="submission_info"
-                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Submission
+                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">Submission
                                 information</a>
                         </li>
                         <li>
                             <a href="#" id="my_submissions"
-                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">My
+                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">My
                                 submissions</a>
                         </li>
                         <li>
                             <a href="#" id="new_submission"
-                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">New
+                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">New
                                 submission</a>
                         </li>
                     </ul>
                 </li>
-                <li>
+                <!-- <li>
                     <a href="#"
-                        class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                        class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100">
+                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
                             aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
                             viewBox="0 0 20 18">
                             <path
@@ -302,20 +326,34 @@
                         </svg>
                         <span class="flex-1 ms-3 whitespace-nowrap">Team</span>
                     </a>
-                </li>
+                </li> -->
                 <li>
-                    <label for="user_token" class="text-xs font-medium text-white">Hugging Face Token (read-only)
+                    <label for="user_token" class="text-xs font-medium">Hugging Face Token (read-only)
                     </label>
                     <input type="password" name="user_token" id="user_token"
                         class="mt-1 block w-full border border-gray-300 px-3 py-1.5 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                 </li>
             </ul>
+            <footer>
+                <div class="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
+                    <span class="text-sm text-gray-500 sm:text-center">Powered by <a
+                            href="https://github.com/huggingface/competitions" class="hover:underline">Hugging Face
+                            Competitions</a>
+                    </span>
+                </div>
+            </footer>
         </div>
     </aside>
     <div class="p-1 sm:ml-64">
-        <img src={{logo}} alt="Competition logo" class="mx-auto">
+        <img src={{logo}} alt="Competition logo">
         <hr class="mt-3 mb-2">
-        <article class="prose max-w-5xl" id="content">
+        <div id="articleLoadingSpinner" role="status"
+            class="hidden absolute -translate-x-1/2 -translate-y-1/2 top-2/4 left-1/2">
+            <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+            <span class="sr-only">Loading...</span>
+        </div>
+        <article class="prose w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between"
+            id="content">
         </article>
     </div>
     <div id="submission-modal" tabindex="-1"
@@ -330,8 +368,7 @@
             <form action="#" method="post" class="gap-2" enctype="multipart/form-data">
                 {% if competition_type == 'generic' %}
                 <div class="form-group">
-                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                        for="submission_file">Upload
+                    <label class="block mb-2 text-sm font-medium text-gray-900" for="submission_file">Upload
                         file</label>
                     <input
                         class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none "

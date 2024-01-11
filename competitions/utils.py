@@ -65,9 +65,10 @@ def run_evaluation(params, local=False, wait=False):
 
 def pause_space(params):
     if "SPACE_ID" in os.environ:
-        logger.info("Pausing space...")
-        api = HfApi(token=params.token)
-        api.pause_space(repo_id=os.environ["SPACE_ID"])
+        if os.environ["SPACE_ID"].split("/")[-1].startswith("comp-"):
+            logger.info("Pausing space...")
+            api = HfApi(token=params.token)
+            api.pause_space(repo_id=os.environ["SPACE_ID"])
 
 
 def download_submission_info(params):

@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import pandas as pd
+from huggingface_hub import hf_hub_download, snapshot_download
 from loguru import logger
-
-from .download import snapshot_download
 
 
 @dataclass
@@ -17,7 +16,7 @@ class Leaderboard:
     eval_higher_is_better: bool
     max_selected_submissions: int
     competition_id: str
-    autotrain_token: str
+    token: str
 
     def __post_init__(self):
         self._refresh_columns()
@@ -42,7 +41,7 @@ class Leaderboard:
         submissions_folder = snapshot_download(
             repo_id=self.competition_id,
             allow_patterns="submission_info/*.json",
-            use_auth_token=self.autotrain_token,
+            use_auth_token=self.token,
             repo_type="dataset",
         )
         logger.info(f"Downloaded submissions in {time.time() - start_time} seconds")
@@ -77,10 +76,7 @@ class Leaderboard:
                             _sub[f"public_score_{skey}"] = _sub["public_score"][skey]
                     _sub["public_score"] = _sub["public_score"][score_key]
 
-            submission_info["submissions"].sort(
-                key=lambda x: x["public_score"],
-                reverse=True if self.eval_higher_is_better else False,
-            )
+            submission_info["submissions"].sort(key=lambda x: x["public_score"], reverse=self.eval_higher_is_better)
             # select only the best submission
             submission_info["submissions"] = submission_info["submissions"][0]
             temp_info = {
@@ -105,7 +101,7 @@ class Leaderboard:
         submissions_folder = snapshot_download(
             repo_id=self.competition_id,
             allow_patterns="submission_info/*.json",
-            use_auth_token=self.autotrain_token,
+            use_auth_token=self.token,
             repo_type="dataset",
         )
         logger.info(f"Downloaded submissions in {time.time() - start_time} seconds")
@@ -253,4 +249,17 @@ class Leaderboard:
         # send submission_datetime to the end
         columns.remove("submission_datetime")
         columns.append("submission_datetime")
+
+        team_metadata = hf_hub_download(
+            repo_id=self.competition_id,
+            filename="teams.json",
+            token=self.token,
+            repo_type="dataset",
+        )
+
+        with open(team_metadata, "r", encoding="utf-8") as f:
+            team_metadata = json.load(f)
+
+        df["id"] = df["id"].apply(lambda x: team_metadata[x]["name"])
+
         return df[columns]

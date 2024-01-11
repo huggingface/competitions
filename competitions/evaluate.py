@@ -75,7 +75,6 @@ def generate_submission_file(params):
 @utils.monitor
 def run(params):
     logger.info(params)
-    logger.info(f"User token: {os.environ.get('USER_TOKEN')}")
     if isinstance(params, dict):
         params = EvalParams(**params)
 
