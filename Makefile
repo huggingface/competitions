@@ -1,5 +1,5 @@
 CFLAGS += -std=c99 -Wall
-.PHONY: quality style
+.PHONY: quality style test
 
 quality:
 	python -m black --check --line-length 119 --target-version py38 .
@@ -15,6 +15,8 @@ docker:
 	docker tag competitions:latest huggingface/competitions:latest
 	docker push huggingface/competitions:latest
 
+test:
+	pytest -sv ./competitions/
 
 socket-kit.so: socket-kit.c
 	gcc $(CFLAGS) -shared -fPIC $^ -o $@ -ldl

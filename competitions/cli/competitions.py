@@ -29,12 +29,7 @@ def main():
         exit(1)
 
     command = args.func(args)
-
-    # try:
     command.run()
-    # except Exception as e:
-    #    logger.error(e)
-    #    sys.exit(1)
 
 
 if __name__ == "__main__":

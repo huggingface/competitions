@@ -15,10 +15,10 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
     LONG_DESCRIPTION = f.read()
 
 QUALITY_REQUIRE = [
-    "black~=22.0",
-    "isort==5.8.0",
-    "flake8==3.9.2",
-    "mypy==0.901",
+    "black~=23.0",
+    "isort==5.13.2",
+    "flake8==7.0.0",
+    "mypy==1.8.0",
 ]
 
 TEST_REQUIRE = ["pytest", "pytest-cov"]
@@ -27,16 +27,9 @@ EXTRAS_REQUIRE = {
     "dev": QUALITY_REQUIRE,
     "quality": QUALITY_REQUIRE,
     "test": TEST_REQUIRE,
-    "docs": [
-        "recommonmark",
-        "sphinx==3.1.2",
-        "sphinx-markdown-tables",
-        "sphinx-rtd-theme==0.4.3",
-        "sphinx-copybutton",
-    ],
 }
 
-with open("requirements.txt") as f:
+with open("requirements.txt", encoding="utf-8") as f:
     INSTALL_REQUIRES = f.read().splitlines()
 
 setup(
@@ -51,6 +44,7 @@ setup(
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     python_requires=">=3.10",
+    license="Apache 2.0",
     classifiers=[
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
@@ -60,5 +54,14 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
-    keywords="huggingface competitions machine learning ai nlp",
+    keywords="huggingface competitions machine learning ai nlp tabular",
+    data_files=[
+        (
+            "templates",
+            [
+                "competitions/templates/index.html",
+            ],
+        ),
+    ],
+    include_package_data=True,
 )
