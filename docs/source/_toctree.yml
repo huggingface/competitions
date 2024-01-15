@@ -2,4 +2,7 @@
   - local: index
     title: 🤗 Competitions
   - local: getting_started
-    title: Installation
+    title: Getting started
+  - local: pricing
+    title: Pricing
+
