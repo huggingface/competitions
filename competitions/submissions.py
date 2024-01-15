@@ -18,6 +18,7 @@ class Submissions:
     competition_id: str
     competition_type: str
     submission_limit: str
+    hardware: str
     end_date: datetime
     token: str
 

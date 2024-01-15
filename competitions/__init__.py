@@ -1,9 +1,1 @@
-import os
-
-
-__version__ = "0.1.4.dev0"
-
-MOONLANDING_URL = os.getenv("MOONLANDING_URL", "https://huggingface.co")
-COMPETITION_ID = os.getenv("COMPETITION_ID")
-AUTOTRAIN_USERNAME = os.getenv("AUTOTRAIN_USERNAME")
-AUTOTRAIN_TOKEN = os.getenv("AUTOTRAIN_TOKEN")
+__version__ = "0.1.6.dev0"

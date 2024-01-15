@@ -125,3 +125,7 @@ class CompetitionInfo:
     @property
     def time_limit(self):
         return self.config["TIME_LIMIT"]
+
+    @property
+    def hardware(self):
+        return self.config["HARDWARE"]

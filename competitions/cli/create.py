@@ -177,6 +177,7 @@ class CreateCompetitionAppCommand(BaseCompetitionsCommand):
             "SUBMISSION_LIMIT": submission_limit,
             "TIME_LIMIT": time_limit,
             "SELECTION_LIMIT": 2,
+            "HARDWARE": hardware,
             "END_DATE": end_date,
             "EVAL_HIGHER_IS_BETTER": eval_higher,
             "SUBMISSION_ID_COLUMN": submission_id_col,
@@ -233,7 +234,7 @@ class CreateCompetitionAppCommand(BaseCompetitionsCommand):
             repo_id=f"{competition_org}/{competition_name}",
             repo_type="space",
             space_sdk="docker",
-            space_hardware="cpu-basic" if competition_type == "generic" else hardware,
+            space_hardware="cpu-basic" if competition_type == "script" else hardware,
             private=True,
         )
         api.add_space_secret(repo_id=f"{competition_org}/{competition_name}", key="HF_TOKEN", value=get_token())
