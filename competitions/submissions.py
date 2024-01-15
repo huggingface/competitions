@@ -453,7 +453,7 @@ class Submissions:
                 repo_id=space_id,
                 repo_type="space",
                 space_sdk="docker",
-                space_hardware="cpu-basic",
+                space_hardware=self.hardware,
                 private=True,
             )
 

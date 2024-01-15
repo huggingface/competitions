@@ -26,4 +26,4 @@ You can choose to make your competition public or private. Public competitions a
 
 ## How to create a competition?
 
-Coming very soon! Till then star and watch this repo to stay updated.
+Please read the [docs](https://huggingface.co/docs/competitions) to learn how to create a competition.
