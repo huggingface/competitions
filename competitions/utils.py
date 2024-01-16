@@ -10,7 +10,7 @@ from loguru import logger
 
 from competitions.params import EvalParams
 
-from . import MOONLANDING_URL
+from . import HF_URL
 
 
 def user_authentication(token):
@@ -22,7 +22,7 @@ def user_authentication(token):
         cookies = {"token": token}
     try:
         response = requests.get(
-            MOONLANDING_URL + "/api/whoami-v2",
+            HF_URL + "/api/whoami-v2",
             headers=headers,
             cookies=cookies,
             timeout=3,
