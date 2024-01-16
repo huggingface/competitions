@@ -229,6 +229,38 @@ class CreateCompetitionAppCommand(BaseCompetitionsCommand):
             repo_type="dataset",
         )
 
+        comp_desc = io.BytesIO(COMPETITION_DESC.encode())
+        api.upload_file(
+            path_or_fileobj=comp_desc,
+            path_in_repo="COMPETITION_DESC.md",
+            repo_id=f"{competition_org}/{competition_name}",
+            repo_type="dataset",
+        )
+
+        dataset_desc = io.BytesIO(DATASET_DESC.encode())
+        api.upload_file(
+            path_or_fileobj=dataset_desc,
+            path_in_repo="DATASET_DESC.md",
+            repo_id=f"{competition_org}/{competition_name}",
+            repo_type="dataset",
+        )
+
+        submission_desc = io.BytesIO(SUBMISSION_DESC.encode())
+        api.upload_file(
+            path_or_fileobj=submission_desc,
+            path_in_repo="SUBMISSION_DESC.md",
+            repo_id=f"{competition_org}/{competition_name}",
+            repo_type="dataset",
+        )
+
+        solution_csv = io.BytesIO(SOLUTION_CSV.encode())
+        api.upload_file(
+            path_or_fileobj=solution_csv,
+            path_in_repo="solution.csv",
+            repo_id=f"{competition_org}/{competition_name}",
+            repo_type="dataset",
+        )
+
         # create competition space
         api.create_repo(
             repo_id=f"{competition_org}/{competition_name}",

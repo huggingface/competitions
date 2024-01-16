@@ -97,7 +97,6 @@ async def get_leaderboard(request: Request, lb: str):
         eval_higher_is_better=COMP_INFO.eval_higher_is_better,
         max_selected_submissions=COMP_INFO.selection_limit,
         competition_id=COMPETITION_ID,
-        hardware=COMP_INFO.hardware,
         token=HF_TOKEN,
     )
     if lb == "private":
@@ -118,6 +117,7 @@ async def my_submissions(request: Request, user: User):
         competition_id=COMPETITION_ID,
         token=HF_TOKEN,
         competition_type=COMP_INFO.competition_type,
+        hardware=COMP_INFO.hardware,
     )
     try:
         success_subs, failed_subs = sub.my_submissions(user.user_token)
@@ -158,6 +158,7 @@ async def new_submission(
         competition_id=COMPETITION_ID,
         token=HF_TOKEN,
         competition_type=COMP_INFO.competition_type,
+        hardware=COMP_INFO.hardware,
     )
     try:
         if COMP_INFO.competition_type == "generic":
