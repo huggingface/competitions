@@ -175,7 +175,7 @@ class JobRunner:
                 continue
             if self.competition_type == "generic":
                 self.run_local(pending_submissions)
-            elif self.competition_type == "code":
+            elif self.competition_type == "script":
                 for _, row in pending_submissions.iterrows():
                     team_id = row["team_id"]
                     submission_id = row["submission_id"]

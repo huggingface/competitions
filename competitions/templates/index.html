@@ -375,7 +375,7 @@
                         id="submission_file" type="file" name="submission_file">
                 </div>
                 {% endif %}
-                {% if competition_type == 'code' %}
+                {% if competition_type == 'script' %}
                 <div class="form-group">
                     <label for="hub_model" class="text-sm font-medium text-gray-700">Hub model
                     </label>
@@ -424,7 +424,7 @@
                 var submissionFile = document.getElementById('submission_file').files[0];
                 formData.append('submission_file', submissionFile);
                 formData.append('hub_model', 'None');
-            } else if (competitionType === 'code') {
+            } else if (competitionType === 'script') {
                 var hubModel = document.getElementById('hub_model').value;
                 if (!hubModel) {
                     alert('Hub model is required.');

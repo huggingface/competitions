@@ -164,7 +164,7 @@ async def new_submission(
         if COMP_INFO.competition_type == "generic":
             resp = sub.new_submission(token, submission_file, submission_comment)
             return {"response": f"Success! You have {resp} submissions remaining today."}
-        elif COMP_INFO.competition_type == "code":
+        elif COMP_INFO.competition_type == "script":
             resp = sub.new_submission(token, hub_model, submission_comment)
             return {"response": f"Success! You have {resp} submissions remaining today."}
     except AuthenticationError:
