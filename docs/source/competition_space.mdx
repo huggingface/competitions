@@ -1,1 +1,38 @@
 # Competition Space
+
+A competition space is a Hugging Face Space where the actual competition takes place. It is a space where you can submit your model and get a score. It is also a space where competitors can see the leaderboard, discuss, and make submissions.
+
+Check out an example competition space below:
+
+![competition space](https://github.com/abhishekkrthakur/public_images/blob/main/competition_space.png?raw=true)
+
+The competition space consists of the following:
+
+- Competition description (content is fetched from private competition repo)
+- Dataset description (content is fetched from private competition repo)
+- Leaderboard (content is fetched from private competition repo)
+    - Public (available to everyone, all the time)
+    - Private (available to everyone, but only after the competition ends)
+- Submissions
+    - Submission guidelines (content is fetched from private competition repo)
+    - My submissions (users can see their own submissions)
+    - New submission (users can make new submissions)
+- Discussions (accessible via community tab)
+
+### Secrets
+
+The competition space requires two secrets:
+
+- `HF_TOKEN`: this is the Hugging Face write token of the user who created the competition space. This token must be kept alive for the duration of the competition. In case the token expires, the competition space will stop working. If you change/refresh/delete this token, you will need to update this secret.
+- `COMPETITION_ID`: this is the path of private competition repo. e.g. `abhishek/private-competition-data`. If you change the name of the private competition repo, you will need to update this secret.
+
+Note: The above two secrets are crucial for the competition space to work!
+
+### Public & private competition spaces
+
+A competition space can be public or private. A public competition space is available to everyone, all the time. 
+A private competition space is only available to the members of the organization the competition space is created in.
+
+You can at any point make the competition public.
+
+Generally, we recommend testing every aspect of the competition space in a private competition space before making it public.

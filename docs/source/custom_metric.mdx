@@ -1,0 +1,138 @@
+# Custom metric
+
+In case you don't settle for the default scikit-learn metrics, you can define your own metric.
+
+Here, we expect the organizer to know python. 
+
+### How to define a custom metric
+
+To define a custom metric, change `EVAL_METRIC` in `conf.json` to `custom`. You must also make sure that `EVAL_HIGHER_IS_BETTER` is set to `1` or `0` depending on whether a higher value of the metric is better or not.
+
+The second step is to create a file `metric.py` in the private competition repo.
+The file should contain a `compute` function that takes competition params as input.
+
+Here is the part where we check if metric is custom and calculate the metric value:
+
+```python
+def compute_metrics(params):
+    if params.metric == "custom":
+        metric_file = hf_hub_download(
+            repo_id=params.competition_id,
+            filename="metric.py",
+            token=params.token,
+            repo_type="dataset",
+        )
+        sys.path.append(os.path.dirname(metric_file))
+        metric = importlib.import_module("metric")
+        evaluation = metric.compute(params)
+    .
+    .
+    .
+````
+
+You can find the above part in competitions github repo `compute_metrics.py`
+
+`params` is defined as:
+
+```python
+class EvalParams(BaseModel):
+    competition_id: str
+    competition_type: str
+    metric: str
+    token: str
+    team_id: str
+    submission_id: str
+    submission_id_col: str
+    submission_cols: List[str]
+    submission_rows: int
+    output_path: str
+    submission_repo: str
+    time_limit: int
+```
+
+You are free to do whatever you want to in the `compute` function. 
+In the end it must return a dictionary with the following keys:
+
+```python
+{
+    "public_score": metric_value,
+    "private_score": metric_value,
+}
+```
+
+public and private scores can be floats or can also be dictionaries in case you want to use multiple metrics.
+Example for multiple metrics:
+
+```python
+{
+    "public_score": {
+        "metric1": metric_value,
+        "metric2": metric_value,
+    },
+    "private_score": {
+        "metric1": metric_value,
+        "metric2": metric_value,
+    },
+}
+```
+
+Note: When using multiple metrics, a base metric (the first one) will be used to rank the participants in the competition.
+
+### Example of a custom metric
+
+```python
+import pandas as pd
+from huggingface_hub import hf_hub_download
+
+
+def compute(params):
+    solution_file = hf_hub_download(
+        repo_id=params.competition_id,
+        filename="solution.csv",
+        token=params.token,
+        repo_type="dataset",
+    )
+
+    solution_df = pd.read_csv(solution_file)
+
+    submission_filename = f"submissions/{params.team_id}-{params.submission_id}.csv"
+    submission_file = hf_hub_download(
+        repo_id=params.competition_id,
+        filename=submission_filename,
+        token=params.token,
+        repo_type="dataset",
+    )
+    submission_df = pd.read_csv(submission_file)
+
+    public_ids = solution_df[solution_df.split == "public"][params.submission_id_col].values
+    private_ids = solution_df[solution_df.split == "private"][params.submission_id_col].values
+
+    public_solution_df = solution_df[solution_df[params.submission_id_col].isin(public_ids)]
+    public_submission_df = submission_df[submission_df[params.submission_id_col].isin(public_ids)]
+
+    private_solution_df = solution_df[solution_df[params.submission_id_col].isin(private_ids)]
+    private_submission_df = submission_df[submission_df[params.submission_id_col].isin(private_ids)]
+
+    public_solution_df = public_solution_df.sort_values(params.submission_id_col).reset_index(drop=True)
+    public_submission_df = public_submission_df.sort_values(params.submission_id_col).reset_index(drop=True)
+
+    private_solution_df = private_solution_df.sort_values(params.submission_id_col).reset_index(drop=True)
+    private_submission_df = private_submission_df.sort_values(params.submission_id_col).reset_index(drop=True)
+
+    # CALCULATE METRICS HERE.......
+    # _metric = SOME METRIC FUNCTION
+    target_cols = [col for col in solution_df.columns if col not in [params.submission_id_col, "split"]]
+    public_score = _metric(public_solution_df[target_cols], public_submission_df[target_cols])
+    private_score = _metric(private_solution_df[target_cols], private_submission_df[target_cols])
+
+    evaluation = {
+        "public_score": public_score,
+        "private_score": private_score,
+    }
+    return evaluation
+```
+
+Take a careful look at the above code. 
+You can see that we are downloading the solution file and the submission file from the dataset repo.
+We are then calculating the metric on the public and private splits of the solution and submission files. 
+Finally, we are returning the metric values in a dictionary.
