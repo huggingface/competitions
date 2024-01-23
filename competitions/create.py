@@ -292,21 +292,28 @@ def main():
             organization = gr.Dropdown(label="Organization name", choices=[""])
             competition_name = gr.Textbox(label="Competition name", lines=1)
             competition_logo = gr.Textbox(label="Competition logo", value="https://mysite.com/mylogo.png", lines=1)
-        with gr.Row():
-            hardware = gr.Dropdown(label="Hardware to use", choices=HARDWARE_CHOICES, value=HARDWARE_CHOICES[0])
-            competition_type = gr.Dropdown(label="Competition type", choices=["generic", "script"], value="generic")
-            time_limit = gr.Textbox(label="Time limit (s). Only used for script competitions", lines=1, value="3600")
-        with gr.Row():
-            metric = gr.Dropdown(label="Metric to use", choices=METRIC_CHOICES, value=METRIC_CHOICES[0])
-            metric_higher_is_better = gr.Dropdown(label="Is higher metric better?", choices=[True, False], value=True)
-        with gr.Row():
-            submission_limit = gr.Textbox(label="Submission limit per day", lines=1, value="5")
-            selection_limit = gr.Textbox(label="Final selection limit", lines=1, value="2")
-            end_date = gr.Textbox(label="End date (YYYY-MM-DD)", lines=1, value="2024-12-31")
-        with gr.Row():
-            submission_id_column = gr.Textbox(label="Submission id column", lines=1, value="id")
-            submission_columns = gr.Textbox(label="Submission columns", lines=1, value="id,pred")
-            submission_rows = gr.Textbox(label="Submission total rows (exclusing header)", lines=1, value="10000")
+        with gr.Group():
+            with gr.Row():
+                hardware = gr.Dropdown(label="Hardware to use", choices=HARDWARE_CHOICES, value=HARDWARE_CHOICES[0])
+                competition_type = gr.Dropdown(
+                    label="Competition type", choices=["generic", "script"], value="generic"
+                )
+                time_limit = gr.Textbox(
+                    label="Time limit (s). Only used for script competitions", lines=1, value="3600"
+                )
+            with gr.Row():
+                metric = gr.Dropdown(label="Metric to use", choices=METRIC_CHOICES, value=METRIC_CHOICES[0])
+                metric_higher_is_better = gr.Dropdown(
+                    label="Is higher metric better?", choices=[True, False], value=True
+                )
+            with gr.Row():
+                submission_limit = gr.Textbox(label="Submission limit per day", lines=1, value="5")
+                selection_limit = gr.Textbox(label="Final selection limit", lines=1, value="2")
+                end_date = gr.Textbox(label="End date (YYYY-MM-DD)", lines=1, value="2024-12-31")
+            with gr.Row():
+                submission_id_column = gr.Textbox(label="Submission id column", lines=1, value="id")
+                submission_columns = gr.Textbox(label="Submission columns", lines=1, value="id,pred")
+                submission_rows = gr.Textbox(label="Submission total rows (exclusing header)", lines=1, value="10000")
 
         output_md = gr.Markdown("Click the button below to create the competition")
         create_competition = gr.Button(value="Create competition")
