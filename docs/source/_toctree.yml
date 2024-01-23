@@ -7,4 +7,18 @@
 - sections:
   - local: create_competition
     title: Create competition
-  title: Create competition
+  - local: competition_repo
+    title: Competition repo
+  - local: competition_space
+    title: Competition space
+  - local: custom_metric
+    title: Custom metric
+  title: Organizing
+- sections:
+  - local: submit
+    title: Making a submission
+  - local: leaderboard
+    title: Leaderboard
+  - local: teams
+    title: Teams
+  title: Participating
