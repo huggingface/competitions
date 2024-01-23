@@ -15,9 +15,24 @@ NOTE: your payment method will not be charged if you are using the free tier of 
 
 To create a competition, click [here](https://huggingface.co/spaces/competitions/create).
 
-## Competition creator
+### Competition creator
 
 ![competition](https://github.com/abhishekkrthakur/public_images/blob/main/competition_creator.png?raw=true)
 
 Please note: you will be able to change almost every setting later on. However, we dont recommend changing evaluation metric once the competition has started.
 As it will require you to re-evaluate all the submissions.
+
+
+### Types of competitions
+
+- generic: generic competitions are competitions where the participants submit a CSV file (or any other file) containing the predictions for the whole test set.
+The predictions are then evaluated against solution.csv (or a solution file) using the evaluation metric provided by the competition creator.
+These competitions are easy to setup and free to host (if you use cpu-basic). You can improve the evaluation runtime by upgrading generic competitions to cpu-upgrade.
+For generic competition, all the test data (without labels) is available to the participants all the time.
+
+- script: script competitions are competitions where the participants submit a python script that takes in the test set and outputs the predictions.
+The predictions are then evaluated against solution.csv (or a solution file) using the evaluation metric provided by the competition creator.
+These competitions are only free to host if you use cpu-basic as the backend for evaluation, and this is not recommended!
+In script competition, the test data can be kept private. The participants wont be able to see the test data at all.
+The participants submit a huggingface model repo containing `script.py` which is run to generate predictions on hidden test data.
+
