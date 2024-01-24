@@ -169,7 +169,7 @@ def _create(
 
     logger.info(f"Creating competition: {competition_name}")
 
-    api = HfApi()
+    api = HfApi(token=user_token)
     api.create_repo(
         repo_id=f"{organization}/{competition_name}",
         repo_type="dataset",
