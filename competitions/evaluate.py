@@ -80,7 +80,7 @@ def run(params):
 
     utils.update_submission_status(params, "processing")
 
-    if params.competition_type == "code":
+    if params.competition_type == "script":
         generate_submission_file(params)
 
     evaluation = compute_metrics(params)
