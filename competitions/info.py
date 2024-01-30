@@ -129,3 +129,7 @@ class CompetitionInfo:
     @property
     def hardware(self):
         return self.config["HARDWARE"]
+
+    @property
+    def dataset(self):
+        return self.config.get("DATASET", "")

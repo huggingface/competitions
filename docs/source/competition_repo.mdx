@@ -47,7 +47,8 @@ conf.json is the configuration file for the competition. An example conf.json is
    "SUBMISSION_COLUMNS":"id,pred",
    "SUBMISSION_ROWS":10000,
    "EVAL_METRIC":"roc_auc_score",
-   "LOGO":"https://github.com/abhishekkrthakur/public_images/blob/main/song.png?raw=true"
+   "LOGO":"https://github.com/abhishekkrthakur/public_images/blob/main/song.png?raw=true",
+   "DATASET": ""
 }
 ```
 
@@ -69,6 +70,7 @@ as it would require you to re-evaluate all the submissions.
 - SUBMISSION_ROWS: This field is used to specify the number of rows in the submission file without the header.
 - EVAL_METRIC: This field is used to specify the evaluation metric. We support all the scikit-learn metrics and even custom metrics.
 - LOGO: This field is used to specify the logo of the competition. The logo must be a png file. The logo is shown on the all pages of the competition.
+- DATASET: This field is used to specify the PRIVATE dataset used in the competition. The dataset is available to the users only during the script run. This is only used for script competitions.
 
 
 ### solution.csv

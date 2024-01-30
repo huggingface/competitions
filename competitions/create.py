@@ -163,6 +163,7 @@ def _create(
         "SUBMISSION_ROWS": int(submission_rows),
         "EVAL_METRIC": metric,
         "LOGO": competition_logo,
+        "DATASET": "",
     }
     teams_json = {}
     user_team_json = {}

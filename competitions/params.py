@@ -17,6 +17,7 @@ class EvalParams(BaseModel):
     output_path: str
     submission_repo: str
     time_limit: int
+    dataset: str
 
     class Config:
         protected_namespaces = ()

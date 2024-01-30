@@ -4,7 +4,7 @@ import os
 import shutil
 import subprocess
 
-from huggingface_hub import HfApi, snapshot_download
+from huggingface_hub import HfApi, Repository, snapshot_download
 from loguru import logger
 
 from competitions import utils
@@ -81,6 +81,7 @@ def run(params):
     utils.update_submission_status(params, "processing")
 
     if params.competition_type == "script":
+        _ = Repository(local_dir="/tmp/data", clone_from=params.dataset)
         generate_submission_file(params)
 
     evaluation = compute_metrics(params)
