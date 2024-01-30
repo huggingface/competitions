@@ -81,7 +81,7 @@ def run(params):
     utils.update_submission_status(params, "processing")
 
     if params.competition_type == "script":
-        _ = Repository(local_dir="/tmp/data", clone_from=params.dataset)
+        _ = Repository(local_dir="/tmp/data", clone_from=params.dataset, token=params.token)
         generate_submission_file(params)
 
     evaluation = compute_metrics(params)
