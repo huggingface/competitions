@@ -128,7 +128,7 @@ class CompetitionInfo:
 
     @property
     def hardware(self):
-        return self.config["HARDWARE"]
+        return self.config.get("HARDWARE", "cpu-basic")
 
     @property
     def dataset(self):
