@@ -5,6 +5,8 @@
 flagged/
 *.csv
 *.db
+install.txt
+uninstall.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

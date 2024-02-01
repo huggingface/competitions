@@ -1,0 +1,2 @@
+xgboost
+git+https://github.com/abhishekkrthakur/autoxgb

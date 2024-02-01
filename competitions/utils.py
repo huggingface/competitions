@@ -133,3 +133,61 @@ def monitor(func):
             pause_space(params)
 
     return wrapper
+
+
+def uninstall_requirements(requirements_fname):
+    if os.path.exists(requirements_fname):
+        # read the requirements.txt
+        uninstall_list = []
+        with open(requirements_fname, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("-"):
+                    uninstall_list.append(line[1:])
+
+        # create an uninstall.txt
+        with open("uninstall.txt", "w", encoding="utf-8") as f:
+            for line in uninstall_list:
+                f.write(line)
+
+        pipe = subprocess.Popen(
+            [
+                "pip",
+                "uninstall",
+                "-r",
+                "uninstall.txt",
+                "-y",
+            ],
+        )
+        pipe.wait()
+        logger.info("Requirements uninstalled.")
+        return
+
+
+def install_requirements(requirements_fname):
+    # check if params.project_name has a requirements.txt
+    if os.path.exists(requirements_fname):
+        # install the requirements using subprocess, wait for it to finish
+        install_list = []
+
+        with open(requirements_fname, "r", encoding="utf-8") as f:
+            for line in f:
+                if not line.startswith("-"):
+                    install_list.append(line)
+
+        with open("install.txt", "w", encoding="utf-8") as f:
+            for line in install_list:
+                f.write(line)
+
+        pipe = subprocess.Popen(
+            [
+                "pip",
+                "install",
+                "-r",
+                "install.txt",
+            ],
+        )
+        pipe.wait()
+        logger.info("Requirements installed.")
+        return
+    logger.info("No requirements.txt found. Skipping requirements installation.")
+    return

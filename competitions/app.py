@@ -7,10 +7,13 @@ from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from huggingface_hub import hf_hub_download
 from huggingface_hub.utils import disable_progress_bars
+from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
 from pydantic import BaseModel
 
+from competitions import utils
 from competitions.errors import AuthenticationError
 from competitions.info import CompetitionInfo
 from competitions.leaderboard import Leaderboard
@@ -27,6 +30,22 @@ OUTPUT_PATH = os.getenv("OUTPUT_PATH", "/tmp/model")
 disable_progress_bars()
 
 COMP_INFO = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+
+
+try:
+    REQUIREMENTS_FNAME = hf_hub_download(
+        repo_id=COMPETITION_ID,
+        filename="requirements.txt",
+        token=HF_TOKEN,
+        repo_type="dataset",
+    )
+except EntryNotFoundError:
+    REQUIREMENTS_FNAME = None
+
+if REQUIREMENTS_FNAME:
+    logger.info("Uninstalling and installing requirements")
+    utils.uninstall_requirements(REQUIREMENTS_FNAME)
+    utils.install_requirements(REQUIREMENTS_FNAME)
 
 
 class User(BaseModel):

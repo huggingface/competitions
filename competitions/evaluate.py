@@ -4,7 +4,8 @@ import os
 import shutil
 import subprocess
 
-from huggingface_hub import HfApi, Repository, snapshot_download
+from huggingface_hub import HfApi, Repository, hf_hub_download, snapshot_download
+from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
 
 from competitions import utils
@@ -81,6 +82,20 @@ def run(params):
     utils.update_submission_status(params, "processing")
 
     if params.competition_type == "script":
+        try:
+            requirements_fname = hf_hub_download(
+                repo_id=params.competition_id,
+                filename="requirements.txt",
+                token=params.token,
+                repo_type="dataset",
+            )
+        except EntryNotFoundError:
+            requirements_fname = None
+
+        if requirements_fname:
+            logger.info("Installing requirements")
+            utils.uninstall_requirements(requirements_fname)
+            utils.install_requirements(requirements_fname)
         _ = Repository(local_dir="/tmp/data", clone_from=params.dataset, token=params.token)
         generate_submission_file(params)
 
