@@ -123,6 +123,7 @@ class JobRunner:
             "output_path": self.output_path,
             "submission_repo": submission_repo,
             "time_limit": self.time_limit,
+            "dataset": self.dataset,
         }
 
         api.add_space_secret(repo_id=space_id, key="PARAMS", value=json.dumps(params))
