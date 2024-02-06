@@ -148,15 +148,18 @@ async def my_submissions(request: Request, user: User):
     except AuthenticationError:
         return {
             "response": {
-                "submissions": "**Invalid token**",
+                "submissions": "",
                 "submission_text": SUBMISSION_TEXT.format(COMP_INFO.submission_limit),
+                "error": "**Invalid token**",
             }
         }
     subs = pd.concat([success_subs, failed_subs], axis=0)
     subs = subs.to_dict(orient="records")
+    error = ""
     if len(subs) == 0:
-        subs = "You have not made any submissions yet."
+        error = "**You have not made any submissions yet.**"
         failed_subs = ""
+        subs = ""
     submission_text = SUBMISSION_TEXT.format(COMP_INFO.submission_limit)
     submission_selection_text = SUBMISSION_SELECTION_TEXT.format(COMP_INFO.selection_limit)
 
@@ -164,6 +167,7 @@ async def my_submissions(request: Request, user: User):
         "response": {
             "submissions": subs,
             "submission_text": submission_text + submission_selection_text,
+            "error": error,
         }
     }
     return resp
@@ -174,8 +178,11 @@ async def new_submission(
     submission_file: UploadFile = File(None),
     hub_model: str = Form(...),
     token: str = Form(...),
-    submission_comment: str = Form(...),
+    submission_comment: str = Form(None),
 ):
+    if submission_comment is None:
+        submission_comment = ""
+
     sub = Submissions(
         end_date=COMP_INFO.end_date,
         submission_limit=COMP_INFO.submission_limit,

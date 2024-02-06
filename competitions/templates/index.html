@@ -135,7 +135,7 @@
                         const contentDiv = document.getElementById('content');
                         // console.log(data.response.submissions);
                         // contentDiv.innerHTML = marked.parse(data.response.submission_text) + data.response.submissions;
-                        if (data.response.submissions && data.response.submissions.length > 0) {
+                        if (data.response.submissions && data.response.submissions.length > 0 && data.response.error.length == 0) {
                             // Start building the table HTML
                             let tableHTML = '<table border="1"><tr><th>Datetime</th><th>Submission ID</th><th>Public Score</th><th>Submission Comment</th><th>Selected</th><th>Status</th></tr>';
 
@@ -160,7 +160,7 @@
                             });
                         } else {
                             // Display message if there are no submissions
-                            contentDiv.innerHTML = marked.parse(data.response.submission_text) + 'You have not made any submissions yet.';
+                            contentDiv.innerHTML = marked.parse(data.response.submission_text) + marked.parse(data.response.error);
                         }
                         articleLoadingSpinner.classList.add('hidden');
                     })

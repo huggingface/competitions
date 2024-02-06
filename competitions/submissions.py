@@ -256,24 +256,29 @@ class Submissions:
             submissions_df = submissions_df[self.private_sub_columns]
         if not private:
             failed_submissions = submissions_df[
-                (submissions_df["status"].isin(["failed", "error"])) | (submissions_df["public_score"] == -1)
+                (submissions_df["status"].isin(["failed", "error", "pending", "processing"]))
+                | (submissions_df["public_score"] == -1)
             ]
             successful_submissions = submissions_df[
-                ~submissions_df["status"].isin(["failed", "error"]) & (submissions_df["public_score"] != -1)
+                ~submissions_df["status"].isin(["failed", "error", "pending", "processing"])
+                & (submissions_df["public_score"] != -1)
             ]
         else:
             failed_submissions = submissions_df[
-                (submissions_df["status"].isin(["failed", "error"]))
+                (submissions_df["status"].isin(["failed", "error", "pending", "processing"]))
                 | (submissions_df["private_score"] == -1)
                 | (submissions_df["public_score"] == -1)
             ]
             successful_submissions = submissions_df[
-                ~submissions_df["status"].isin(["failed", "error"])
+                ~submissions_df["status"].isin(["failed", "error", "pending", "processing"])
                 & (submissions_df["private_score"] != -1)
                 & (submissions_df["public_score"] != -1)
             ]
         failed_submissions = failed_submissions.reset_index(drop=True)
         successful_submissions = successful_submissions.reset_index(drop=True)
+
+        if len(successful_submissions) == 0:
+            return successful_submissions, failed_submissions
 
         if not private:
             first_submission = successful_submissions.iloc[0]
