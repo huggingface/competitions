@@ -65,12 +65,14 @@ def generate_submission_file(params):
         logger.error("Subprocess didn't terminate successfully")
 
     api = HfApi(token=params.token)
-    api.upload_file(
-        path_or_fileobj=f"{submission_dir}/submission.csv",
-        path_in_repo=f"submissions/{params.team_id}-{params.submission_id}.csv",
-        repo_id=params.competition_id,
-        repo_type="dataset",
-    )
+    for sub_file in params.submission_filenames:
+        sub_file_ext = sub_file.split(".")[-1]
+        api.upload_file(
+            path_or_fileobj=f"{submission_dir}/{sub_file}",
+            path_in_repo=f"submissions/{params.team_id}-{params.submission_id}.{sub_file_ext}",
+            repo_id=params.competition_id,
+            repo_type="dataset",
+        )
 
 
 @utils.monitor
