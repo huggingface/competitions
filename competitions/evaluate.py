@@ -63,9 +63,12 @@ def generate_submission_file(params):
     # Check if process terminated due to timeout
     if process.returncode and process.returncode != 0:
         logger.error("Subprocess didn't terminate successfully")
+    else:
+        logger.info("Subprocess terminated successfully")
 
     api = HfApi(token=params.token)
     for sub_file in params.submission_filenames:
+        logger.info(f"Uploading {sub_file} to the repository")
         sub_file_ext = sub_file.split(".")[-1]
         api.upload_file(
             path_or_fileobj=f"{submission_dir}/{sub_file}",
