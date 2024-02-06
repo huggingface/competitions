@@ -104,7 +104,8 @@ def run(params):
             logger.info("Installing requirements")
             utils.uninstall_requirements(requirements_fname)
             utils.install_requirements(requirements_fname)
-        _ = Repository(local_dir="/tmp/data", clone_from=params.dataset, token=params.token)
+        if len(str(params.dataset).strip()) > 0:
+            _ = Repository(local_dir="/tmp/data", clone_from=params.dataset, token=params.token)
         generate_submission_file(params)
 
     evaluation = compute_metrics(params)
