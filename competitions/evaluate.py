@@ -66,6 +66,9 @@ def generate_submission_file(params):
     else:
         logger.info("Subprocess terminated successfully")
 
+    logger.info("contents of submission_dir")
+    logger.info(os.listdir(submission_dir))
+
     api = HfApi(token=params.token)
     for sub_file in params.submission_filenames:
         logger.info(f"Uploading {sub_file} to the repository")
