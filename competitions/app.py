@@ -52,6 +52,11 @@ class User(BaseModel):
     user_token: str
 
 
+class UserSubmissionUpdate(BaseModel):
+    user_token: str
+    submission_ids: str
+
+
 def run_job_runner():
     job_runner = JobRunner(token=HF_TOKEN, competition_info=COMP_INFO, output_path=OUTPUT_PATH)
     job_runner.run()
@@ -148,8 +153,8 @@ async def my_submissions(request: Request, user: User):
             }
         }
     subs = pd.concat([success_subs, failed_subs], axis=0)
-    subs = subs.to_markdown(index=False)
-    if len(subs.strip()) == 0:
+    subs = subs.to_dict(orient="records")
+    if len(subs) == 0:
         subs = "You have not made any submissions yet."
         failed_subs = ""
     submission_text = SUBMISSION_TEXT.format(COMP_INFO.submission_limit)
@@ -189,3 +194,24 @@ async def new_submission(
     except AuthenticationError:
         return {"response": "Invalid token"}
     return {"response": "Invalid competition type"}
+
+
+@app.post("/update_selected_submissions", response_class=JSONResponse)
+def update_selected_submissions(request: Request, user_sub: UserSubmissionUpdate):
+    sub = Submissions(
+        end_date=COMP_INFO.end_date,
+        submission_limit=COMP_INFO.submission_limit,
+        competition_id=COMPETITION_ID,
+        token=HF_TOKEN,
+        competition_type=COMP_INFO.competition_type,
+        hardware=COMP_INFO.hardware,
+    )
+    submission_ids = user_sub.submission_ids.split(",")
+    submission_ids = [s.strip() for s in submission_ids]
+    if len(submission_ids) > COMP_INFO.selection_limit:
+        return {
+            "success": False,
+            "error": f"Please select at most {COMP_INFO.selection_limit} submissions.",
+        }
+    sub.update_selected_submissions(user_token=user_sub.user_token, selected_submission_ids=submission_ids)
+    return {"success": True, "error": ""}
