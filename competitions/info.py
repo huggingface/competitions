@@ -133,3 +133,7 @@ class CompetitionInfo:
     @property
     def dataset(self):
         return self.config.get("DATASET", "")
+
+    @property
+    def submission_filenames(self):
+        return self.config.get("SUBMISSION_FILENAMES", ["submission.csv"])

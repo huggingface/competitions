@@ -157,13 +157,14 @@ def _create(
         "SELECTION_LIMIT": int(selection_limit),
         "HARDWARE": hardware,
         "END_DATE": end_date,
-        "EVAL_HIGHER_IS_BETTER": metric_higher_is_better == "True",
+        "EVAL_HIGHER_IS_BETTER": metric_higher_is_better is True,
         "SUBMISSION_ID_COLUMN": submission_id_column,
         "SUBMISSION_COLUMNS": submission_columns,
         "SUBMISSION_ROWS": int(submission_rows),
         "EVAL_METRIC": metric,
         "LOGO": competition_logo,
         "DATASET": "",
+        "SUBMISSION_FILENAMES": ["submission.csv"],
     }
     teams_json = {}
     user_team_json = {}

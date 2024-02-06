@@ -103,7 +103,7 @@ def run(params):
 
     utils.update_submission_score(params, evaluation["public_score"], evaluation["private_score"])
     utils.update_submission_status(params, "success")
-    utils.pause_space(params)
+    utils.delete_space(params)
 
 
 if __name__ == "__main__":

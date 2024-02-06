@@ -38,6 +38,7 @@ class JobRunner:
         self.submission_rows = self.competition_info.submission_rows
         self.time_limit = self.competition_info.time_limit
         self.dataset = self.competition_info.dataset
+        self.submission_filenames = self.competition_info.submission_filenames
 
     def get_pending_subs(self):
         submission_jsons = snapshot_download(
@@ -90,6 +91,7 @@ class JobRunner:
                 "submission_repo": row["submission_repo"],
                 "time_limit": self.time_limit,
                 "dataset": self.dataset,
+                "submission_filenames": self.submission_filenames,
             }
             eval_params = json.dumps(eval_params)
             eval_pid = run_evaluation(eval_params, local=True, wait=True)
@@ -124,6 +126,7 @@ class JobRunner:
             "submission_repo": submission_repo,
             "time_limit": self.time_limit,
             "dataset": self.dataset,
+            "submission_filenames": self.submission_filenames,
         }
 
         api.add_space_secret(repo_id=space_id, key="PARAMS", value=json.dumps(params))

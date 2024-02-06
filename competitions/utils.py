@@ -71,6 +71,14 @@ def pause_space(params):
             api.pause_space(repo_id=os.environ["SPACE_ID"])
 
 
+def delete_space(params):
+    if "SPACE_ID" in os.environ:
+        if os.environ["SPACE_ID"].split("/")[-1].startswith("comp-"):
+            logger.info("Deleting space...")
+            api = HfApi(token=params.token)
+            api.delete_repo(repo_id=os.environ["SPACE_ID"], repo_type="space")
+
+
 def download_submission_info(params):
     user_fname = hf_hub_download(
         repo_id=params.competition_id,
