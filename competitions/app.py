@@ -1,3 +1,4 @@
+import datetime
 import os
 import threading
 
@@ -122,10 +123,10 @@ async def get_leaderboard(request: Request, lb: str):
         token=HF_TOKEN,
         scoring_metric=COMP_INFO.scoring_metric,
     )
-    # if lb == "private":
-    #     current_utc_time = datetime.datetime.utcnow()
-    #     if current_utc_time < COMP_INFO.end_date:
-    #         return {"response": "Private leaderboard will be available after the competition ends."}
+    if lb == "private":
+        current_utc_time = datetime.datetime.utcnow()
+        if current_utc_time < COMP_INFO.end_date:
+            return {"response": "Private leaderboard will be available after the competition ends."}
     df = leaderboard.fetch(private=lb == "private")
     logger.info(df)
     if len(df) == 0:
