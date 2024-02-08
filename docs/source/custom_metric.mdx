@@ -56,12 +56,16 @@ In the end it must return a dictionary with the following keys:
 
 ```python
 {
-    "public_score": metric_value,
-    "private_score": metric_value,
+    "public_score": {
+        "metric1": metric_value,
+    },,
+    "private_score": {
+        "metric1": metric_value,
+    },,
 }
 ```
 
-public and private scores can be floats or can also be dictionaries in case you want to use multiple metrics.
+public and private scores must be dictionaries! You can also use multiple metrics.
 Example for multiple metrics:
 
 ```python
@@ -77,7 +81,9 @@ Example for multiple metrics:
 }
 ```
 
-Note: When using multiple metrics, a base metric (the first one) will be used to rank the participants in the competition.
+Note: When using multiple metrics, conf.json must have `SCORING_METRIC` specified to rank the participants in the competition.
+
+For example, if I want to use metric2 to rank the participants, I will set `SCORING_METRIC` to `metric2` in `conf.json`.
 
 ### Example of a custom metric
 
@@ -127,8 +133,12 @@ def compute(params):
     private_score = _metric(private_solution_df[target_cols], private_submission_df[target_cols])
 
     evaluation = {
-        "public_score": public_score,
-        "private_score": private_score,
+        "public_score": {
+            "metric1": public_score,
+        },
+        "private_score": {
+            "metric1": public_score,
+        }
     }
     return evaluation
 ```

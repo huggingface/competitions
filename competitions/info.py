@@ -52,6 +52,12 @@ class CompetitionInfo:
         except Exception:
             self.submission_desc = None
 
+        if self.config["EVAL_METRIC"] == "custom":
+            if "SCORING_METRIC" not in self.config:
+                raise ValueError(
+                    "For custom metrics, please provide a single SCORING_METRIC name in the competition config file: conf.json"
+                )
+
     def load_md(self, md_path):
         with open(md_path) as f:
             md = f.read()
@@ -137,3 +143,11 @@ class CompetitionInfo:
     @property
     def submission_filenames(self):
         return self.config.get("SUBMISSION_FILENAMES", ["submission.csv"])
+
+    @property
+    def scoring_metric(self):
+        if self.config["EVAL_METRIC"] == "custom":
+            if "SCORING_METRIC" not in self.config:
+                raise Exception("Please provide a single SCORING_METRIC in the competition config file: conf.json")
+            return self.config["SCORING_METRIC"]
+        return self.config["EVAL_METRIC"]

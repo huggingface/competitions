@@ -10,6 +10,7 @@ from loguru import logger
 
 from competitions import utils
 from competitions.compute_metrics import compute_metrics
+from competitions.enums import SubmissionStatus
 from competitions.params import EvalParams
 
 
@@ -87,7 +88,7 @@ def run(params):
     if isinstance(params, dict):
         params = EvalParams(**params)
 
-    utils.update_submission_status(params, "processing")
+    utils.update_submission_status(params, SubmissionStatus.PROCESSING.value)
 
     if params.competition_type == "script":
         try:
@@ -111,7 +112,7 @@ def run(params):
     evaluation = compute_metrics(params)
 
     utils.update_submission_score(params, evaluation["public_score"], evaluation["private_score"])
-    utils.update_submission_status(params, "success")
+    utils.update_submission_status(params, SubmissionStatus.SUCCESS.value)
     utils.delete_space(params)
 
 

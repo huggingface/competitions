@@ -9,6 +9,7 @@ import pandas as pd
 from huggingface_hub import HfApi, hf_hub_download, snapshot_download
 from loguru import logger
 
+from competitions.enums import SubmissionStatus
 from competitions.info import CompetitionInfo
 from competitions.utils import run_evaluation
 
@@ -53,7 +54,7 @@ class JobRunner:
             _json = json.load(open(_json, "r", encoding="utf-8"))
             team_id = _json["id"]
             for sub in _json["submissions"]:
-                if sub["status"] == "pending":
+                if sub["status"] == SubmissionStatus.PENDING.value:
                     pending_submissions.append(
                         {
                             "team_id": team_id,
@@ -61,7 +62,6 @@ class JobRunner:
                             "datetime": sub["datetime"],
                             "submission_repo": sub["submission_repo"],
                             "space_id": sub["space_id"],
-                            "space_status": sub["space_status"],
                         }
                     )
         if len(pending_submissions) == 0:
@@ -73,29 +73,53 @@ class JobRunner:
         pending_submissions = pending_submissions.reset_index(drop=True)
         return pending_submissions
 
-    def run_local(self, pending_submissions):
-        for _, row in pending_submissions.iterrows():
-            team_id = row["team_id"]
-            submission_id = row["submission_id"]
-            eval_params = {
-                "competition_id": self.competition_id,
-                "competition_type": self.competition_type,
-                "metric": self.metric,
-                "token": self.token,
-                "team_id": team_id,
-                "submission_id": submission_id,
-                "submission_id_col": self.submission_id_col,
-                "submission_cols": self.submission_cols,
-                "submission_rows": self.submission_rows,
-                "output_path": self.output_path,
-                "submission_repo": row["submission_repo"],
-                "time_limit": self.time_limit,
-                "dataset": self.dataset,
-                "submission_filenames": self.submission_filenames,
-            }
-            eval_params = json.dumps(eval_params)
-            eval_pid = run_evaluation(eval_params, local=True, wait=True)
-            logger.info(f"New evaluation process started with pid {eval_pid}.")
+    def _queue_submission(self, team_id, submission_id):
+        team_fname = hf_hub_download(
+            repo_id=self.competition_id,
+            filename=f"submission_info/{team_id}.json",
+            token=self.token,
+            repo_type="dataset",
+        )
+        with open(team_fname, "r", encoding="utf-8") as f:
+            team_submission_info = json.load(f)
+
+        for submission in team_submission_info["submissions"]:
+            if submission["submission_id"] == submission_id:
+                submission["status"] = SubmissionStatus.QUEUED.value
+                break
+
+        team_submission_info_json = json.dumps(team_submission_info, indent=4)
+        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
+        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
+        api = HfApi(token=self.token)
+        api.upload_file(
+            path_or_fileobj=team_submission_info_json_buffer,
+            path_in_repo=f"submission_info/{team_id}.json",
+            repo_id=self.competition_id,
+            repo_type="dataset",
+        )
+
+    def run_local(self, team_id, submission_id, submission_repo):
+        self._queue_submission(team_id, submission_id)
+        eval_params = {
+            "competition_id": self.competition_id,
+            "competition_type": self.competition_type,
+            "metric": self.metric,
+            "token": self.token,
+            "team_id": team_id,
+            "submission_id": submission_id,
+            "submission_id_col": self.submission_id_col,
+            "submission_cols": self.submission_cols,
+            "submission_rows": self.submission_rows,
+            "output_path": self.output_path,
+            "submission_repo": submission_repo,
+            "time_limit": self.time_limit,
+            "dataset": self.dataset,
+            "submission_filenames": self.submission_filenames,
+        }
+        eval_params = json.dumps(eval_params)
+        eval_pid = run_evaluation(eval_params, local=True, wait=True)
+        logger.info(f"New evaluation process started with pid {eval_pid}.")
 
     def _create_readme(self, project_name):
         _readme = "---\n"
@@ -146,32 +170,7 @@ class JobRunner:
             repo_id=space_id,
             repo_type="space",
         )
-
-        # update space_status in submission_info
-        team_fname = hf_hub_download(
-            repo_id=self.competition_id,
-            filename=f"submission_info/{team_id}.json",
-            token=self.token,
-            repo_type="dataset",
-        )
-        with open(team_fname, "r", encoding="utf-8") as f:
-            team_submission_info = json.load(f)
-
-        for submission in team_submission_info["submissions"]:
-            if submission["submission_id"] == submission_id:
-                submission["space_status"] = 1
-                break
-
-        team_submission_info_json = json.dumps(team_submission_info, indent=4)
-        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
-        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
-        api = HfApi(token=self.token)
-        api.upload_file(
-            path_or_fileobj=team_submission_info_json_buffer,
-            path_in_repo=f"submission_info/{team_id}.json",
-            repo_id=self.competition_id,
-            repo_type="dataset",
-        )
+        self._queue_submission(team_id, submission_id)
 
     def run(self):
         while True:
@@ -180,14 +179,16 @@ class JobRunner:
                 time.sleep(5)
                 continue
             if self.competition_type == "generic":
-                self.run_local(pending_submissions)
+                for _, row in pending_submissions.iterrows():
+                    team_id = row["team_id"]
+                    submission_id = row["submission_id"]
+                    submission_repo = row["submission_repo"]
+                    self.run_local(team_id, submission_id, submission_repo)
             elif self.competition_type == "script":
                 for _, row in pending_submissions.iterrows():
                     team_id = row["team_id"]
                     submission_id = row["submission_id"]
                     submission_repo = row["submission_repo"]
                     space_id = row["space_id"]
-                    space_status = row["space_status"]
-                    if space_status == 0:
-                        self.create_space(team_id, submission_id, submission_repo, space_id)
+                    self.create_space(team_id, submission_id, submission_repo, space_id)
             time.sleep(5)

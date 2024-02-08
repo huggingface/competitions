@@ -8,6 +8,7 @@ import requests
 from huggingface_hub import HfApi, hf_hub_download
 from loguru import logger
 
+from competitions.enums import SubmissionStatus
 from competitions.params import EvalParams
 
 from . import HF_URL
@@ -137,7 +138,7 @@ def monitor(func):
             error_message = f"""{func.__name__} has failed due to an exception: {traceback.format_exc()}"""
             logger.error(error_message)
             logger.error(str(e))
-            update_submission_status(params, "failed")
+            update_submission_status(params, SubmissionStatus.FAILED.value)
             pause_space(params)
 
     return wrapper

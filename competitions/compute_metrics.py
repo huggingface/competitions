@@ -59,7 +59,15 @@ def compute_metrics(params):
 
         # scores can also be dictionaries for multiple metrics
         evaluation = {
-            "public_score": public_score,
-            "private_score": private_score,
+            "public_score": {
+                params.metric: public_score,
+            },
+            "private_score": {
+                params.metric: private_score,
+            },
         }
+
+    # check all keys in public_score and private_score are same
+    if evaluation["public_score"].keys() != evaluation["private_score"].keys():
+        raise ValueError("Public and private scores have different keys")
     return evaluation

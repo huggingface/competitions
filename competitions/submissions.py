@@ -6,11 +6,10 @@ from datetime import datetime
 
 import pandas as pd
 from huggingface_hub import HfApi, hf_hub_download
-from huggingface_hub.utils._errors import EntryNotFoundError
-from loguru import logger
 
-from .errors import AuthenticationError, PastDeadlineError, SubmissionError, SubmissionLimitError
-from .utils import user_authentication
+from competitions.enums import SubmissionStatus
+from competitions.errors import AuthenticationError, PastDeadlineError, SubmissionError, SubmissionLimitError
+from competitions.utils import user_authentication
 
 
 @dataclass
@@ -22,110 +21,10 @@ class Submissions:
     end_date: datetime
     token: str
 
-    def __post_init__(self):
-        self.public_sub_columns = [
-            "datetime",
-            "submission_id",
-            "public_score",
-            "submission_comment",
-            "selected",
-            "status",
-        ]
-        self.private_sub_columns = [
-            "datetime",
-            "submission_id",
-            "public_score",
-            "private_score",
-            "submission_comment",
-            "selected",
-            "status",
-        ]
-
     def _verify_submission(self, bytes_data):
         return True
 
-    def _add_new_team(self, team_id):
-        api = HfApi(token=self.token)
-        team_submission_info = {}
-        team_submission_info["id"] = team_id
-        team_submission_info["submissions"] = []
-        team_submission_info_json = json.dumps(team_submission_info, indent=4)
-        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
-        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
-
-        api.upload_file(
-            path_or_fileobj=team_submission_info_json_buffer,
-            path_in_repo=f"submission_info/{team_id}.json",
-            repo_id=self.competition_id,
-            repo_type="dataset",
-        )
-
-    def _check_team_submission_limit(self, team_id):
-        try:
-            team_fname = hf_hub_download(
-                repo_id=self.competition_id,
-                filename=f"submission_info/{team_id}.json",
-                token=self.token,
-                repo_type="dataset",
-            )
-        except EntryNotFoundError:
-            self._add_new_team(team_id)
-            team_fname = hf_hub_download(
-                repo_id=self.competition_id,
-                filename=f"submission_info/{team_id}.json",
-                token=self.token,
-                repo_type="dataset",
-            )
-        except Exception as e:
-            logger.error(e)
-            raise Exception("Hugging Face Hub is unreachable, please try again later.")
-
-        with open(team_fname, "r", encoding="utf-8") as f:
-            team_submission_info = json.load(f)
-
-        todays_date = datetime.utcnow().strftime("%Y-%m-%d")
-        if len(team_submission_info["submissions"]) == 0:
-            team_submission_info["submissions"] = []
-
-        # count the number of times user has submitted today
-        todays_submissions = 0
-        for sub in team_submission_info["submissions"]:
-            submission_datetime = sub["datetime"]
-            submission_date = submission_datetime.split(" ")[0]
-            if submission_date == todays_date:
-                todays_submissions += 1
-        if todays_submissions >= self.submission_limit:
-            return False
-        return True
-
-    def _submissions_today(self, team_id):
-        try:
-            team_fname = hf_hub_download(
-                repo_id=self.competition_id,
-                filename=f"submission_info/{team_id}.json",
-                token=self.token,
-                repo_type="dataset",
-            )
-        except EntryNotFoundError:
-            self._add_new_team(team_id)
-            team_fname = hf_hub_download(
-                repo_id=self.competition_id,
-                filename=f"submission_info/{team_id}.json",
-                token=self.token,
-                repo_type="dataset",
-            )
-        except Exception as e:
-            logger.error(e)
-            raise Exception("Hugging Face Hub is unreachable, please try again later.")
-
-        with open(team_fname, "r", encoding="utf-8") as f:
-            team_submission_info = json.load(f)
-
-        todays_date = datetime.utcnow().strftime("%Y-%m-%d")
-        if len(team_submission_info["submissions"]) == 0:
-            team_submission_info["submissions"] = []
-
-        # count the number of times user has submitted today
+    def _num_subs_today(self, todays_date, team_submission_info):
         todays_submissions = 0
         for sub in team_submission_info["submissions"]:
             submission_datetime = sub["datetime"]
@@ -133,6 +32,22 @@ class Submissions:
             if submission_date == todays_date:
                 todays_submissions += 1
         return todays_submissions
+
+    def _is_submission_allowed(self, team_id):
+        todays_date = datetime.utcnow()
+        if todays_date > self.end_date:
+            raise PastDeadlineError("Competition has ended.")
+
+        todays_date = todays_date.strftime("%Y-%m-%d")
+        team_submission_info = self._download_team_submissions(team_id)
+
+        if len(team_submission_info["submissions"]) == 0:
+            team_submission_info["submissions"] = []
+
+        todays_submissions = self._num_subs_today(todays_date, team_submission_info)
+        if todays_submissions >= self.submission_limit:
+            return False
+        return True
 
     def _increment_submissions(
         self,
@@ -142,7 +57,6 @@ class Submissions:
         submission_comment,
         submission_repo=None,
         space_id=None,
-        space_status=0,
     ):
         if submission_repo is None:
             submission_repo = ""
@@ -167,22 +81,19 @@ class Submissions:
                 "submission_repo": submission_repo,
                 "space_id": space_id,
                 "submitted_by": user_id,
-                "status": "pending",
+                "status": SubmissionStatus.PENDING.value,
                 "selected": False,
-                "public_score": -1,
-                "private_score": -1,
-                "space_status": space_status,
+                "public_score": {},
+                "private_score": {},
             }
         )
         # count the number of times user has submitted today
-        todays_submissions = 0
         todays_date = datetime.utcnow().strftime("%Y-%m-%d")
-        for sub in team_submission_info["submissions"]:
-            submission_datetime = sub["datetime"]
-            submission_date = submission_datetime.split(" ")[0]
-            if submission_date == todays_date:
-                todays_submissions += 1
+        todays_submissions = self._num_subs_today(todays_date, team_submission_info)
+        self._upload_team_submissions(team_id, team_submission_info)
+        return todays_submissions
 
+    def _upload_team_submissions(self, team_id, team_submission_info):
         team_submission_info_json = json.dumps(team_submission_info, indent=4)
         team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
         team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
@@ -193,9 +104,8 @@ class Submissions:
             repo_id=self.competition_id,
             repo_type="dataset",
         )
-        return todays_submissions
 
-    def _download_team_subs(self, team_id):
+    def _download_team_submissions(self, team_id):
         team_fname = hf_hub_download(
             repo_id=self.competition_id,
             filename=f"submission_info/{team_id}.json",
@@ -204,7 +114,7 @@ class Submissions:
         )
         with open(team_fname, "r", encoding="utf-8") as f:
             team_submission_info = json.load(f)
-        return team_submission_info["submissions"]
+        return team_submission_info
 
     def update_selected_submissions(self, user_token, selected_submission_ids):
         current_datetime = datetime.utcnow()
@@ -212,16 +122,8 @@ class Submissions:
             raise PastDeadlineError("Competition has ended.")
 
         user_info = self._get_user_info(user_token)
-        team_id = self._get_team_id(user_info)
-
-        team_fname = hf_hub_download(
-            repo_id=self.competition_id,
-            filename=f"submission_info/{team_id}.json",
-            token=self.token,
-            repo_type="dataset",
-        )
-        with open(team_fname, "r", encoding="utf-8") as f:
-            team_submission_info = json.load(f)
+        team_id = self._get_team_id(user_info, create_team=False)
+        team_submission_info = self._download_team_submissions(team_id)
 
         for sub in team_submission_info["submissions"]:
             if sub["submission_id"] in selected_submission_ids:
@@ -229,96 +131,30 @@ class Submissions:
             else:
                 sub["selected"] = False
 
-        team_submission_info_json = json.dumps(team_submission_info, indent=4)
-        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
-        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
-        api = HfApi(token=self.token)
-        api.upload_file(
-            path_or_fileobj=team_submission_info_json_buffer,
-            path_in_repo=f"submission_info/{team_id}.json",
-            repo_id=self.competition_id,
-            repo_type="dataset",
-        )
+        self._upload_team_submissions(team_id, team_submission_info)
 
     def _get_team_subs(self, team_id, private=False):
-        try:
-            team_submissions = self._download_team_subs(team_id)
-        except EntryNotFoundError:
-            logger.warning("No submissions found for user")
-            return pd.DataFrame(), pd.DataFrame()
+        team_submissions_info = self._download_team_submissions(team_id)
+        submissions_df = pd.DataFrame(team_submissions_info["submissions"])
 
-        submissions_df = pd.DataFrame(team_submissions)
+        if len(submissions_df) == 0:
+            return pd.DataFrame(), pd.DataFrame()
 
         if not private:
             submissions_df = submissions_df.drop(columns=["private_score"])
-            submissions_df = submissions_df[self.public_sub_columns]
-        else:
-            submissions_df = submissions_df[self.private_sub_columns]
-        if not private:
-            failed_submissions = submissions_df[
-                (submissions_df["status"].isin(["failed", "error", "pending", "processing"]))
-                | (submissions_df["public_score"] == -1)
-            ]
-            successful_submissions = submissions_df[
-                ~submissions_df["status"].isin(["failed", "error", "pending", "processing"])
-                & (submissions_df["public_score"] != -1)
-            ]
-        else:
-            failed_submissions = submissions_df[
-                (submissions_df["status"].isin(["failed", "error", "pending", "processing"]))
-                | (submissions_df["private_score"] == -1)
-                | (submissions_df["public_score"] == -1)
-            ]
-            successful_submissions = submissions_df[
-                ~submissions_df["status"].isin(["failed", "error", "pending", "processing"])
-                & (submissions_df["private_score"] != -1)
-                & (submissions_df["public_score"] != -1)
-            ]
-        failed_submissions = failed_submissions.reset_index(drop=True)
-        successful_submissions = successful_submissions.reset_index(drop=True)
 
-        if len(successful_submissions) == 0:
-            return successful_submissions, failed_submissions
+        submissions_df = submissions_df.sort_values(by="datetime", ascending=False)
+        submissions_df = submissions_df.reset_index(drop=True)
 
-        if not private:
-            first_submission = successful_submissions.iloc[0]
-            if isinstance(first_submission["public_score"], dict):
-                # split the public score dict into columns
-                temp_scores_df = successful_submissions["public_score"].apply(pd.Series)
-                temp_scores_df = temp_scores_df.rename(columns=lambda x: "public_" + str(x))
-                successful_submissions = pd.concat(
-                    [
-                        successful_submissions.drop(["public_score"], axis=1),
-                        temp_scores_df,
-                    ],
-                    axis=1,
-                )
-        else:
-            first_submission = successful_submissions.iloc[0]
-            if isinstance(first_submission["private_score"], dict):
-                # split the public score dict into columns
-                temp_scores_df = successful_submissions["private_score"].apply(pd.Series)
-                temp_scores_df = temp_scores_df.rename(columns=lambda x: "private_" + str(x))
-                successful_submissions = pd.concat(
-                    [
-                        successful_submissions.drop(["private_score"], axis=1),
-                        temp_scores_df,
-                    ],
-                    axis=1,
-                )
+        # stringify public_score column
+        submissions_df["public_score"] = submissions_df["public_score"].apply(json.dumps)
 
-            if isinstance(first_submission["public_score"], dict):
-                # split the public score dict into columns
-                temp_scores_df = successful_submissions["public_score"].apply(pd.Series)
-                temp_scores_df = temp_scores_df.rename(columns=lambda x: "public_" + str(x))
-                successful_submissions = pd.concat(
-                    [
-                        successful_submissions.drop(["public_score"], axis=1),
-                        temp_scores_df,
-                    ],
-                    axis=1,
-                )
-        return successful_submissions, failed_submissions
+        if private:
+            submissions_df["private_score"] = submissions_df["private_score"].apply(json.dumps)
+
+        submissions_df["status"] = submissions_df["status"].apply(lambda x: SubmissionStatus(x).name)
+
+        return submissions_df
 
     def _get_user_info(self, user_token):
         user_info = user_authentication(token=user_token)
@@ -335,25 +171,12 @@ class Submissions:
         private = False
         if current_date_time >= self.end_date:
             private = True
-        team_id = self._get_team_id(user_info)
-        success_subs, failed_subs = self._get_team_subs(team_id, private=private)
-        return success_subs, failed_subs
+        team_id = self._get_team_id(user_info, create_team=False)
+        if not team_id:
+            return pd.DataFrame()
+        return self._get_team_subs(team_id, private=private)
 
-    def _get_team_id(self, user_info):
-        user_id = user_info["id"]
-        user_name = user_info["name"]
-        user_team = hf_hub_download(
-            repo_id=self.competition_id,
-            filename="user_team.json",
-            token=self.token,
-            repo_type="dataset",
-        )
-        with open(user_team, "r", encoding="utf-8") as f:
-            user_team = json.load(f)
-
-        if user_id in user_team:
-            return user_team[user_id]
-
+    def _create_team(self, user_team, user_id, user_name):
         team_metadata = hf_hub_download(
             repo_id=self.competition_id,
             filename="teams.json",
@@ -383,6 +206,13 @@ class Submissions:
         team_metadata_json_bytes = team_metadata_json.encode("utf-8")
         team_metadata_json_buffer = io.BytesIO(team_metadata_json_bytes)
 
+        team_submission_info = {}
+        team_submission_info["id"] = team_id
+        team_submission_info["submissions"] = []
+        team_submission_info_json = json.dumps(team_submission_info, indent=4)
+        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
+        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
+
         api = HfApi(token=self.token)
         api.upload_file(
             path_or_fileobj=user_team_json_buffer,
@@ -396,7 +226,34 @@ class Submissions:
             repo_id=self.competition_id,
             repo_type="dataset",
         )
+        api.upload_file(
+            path_or_fileobj=team_submission_info_json_buffer,
+            path_in_repo=f"submission_info/{team_id}.json",
+            repo_id=self.competition_id,
+            repo_type="dataset",
+        )
+        return team_id
 
+    def _get_team_id(self, user_info, create_team):
+        user_id = user_info["id"]
+        user_name = user_info["name"]
+        user_team = hf_hub_download(
+            repo_id=self.competition_id,
+            filename="user_team.json",
+            token=self.token,
+            repo_type="dataset",
+        )
+        with open(user_team, "r", encoding="utf-8") as f:
+            user_team = json.load(f)
+
+        if user_id in user_team:
+            return user_team[user_id]
+
+        if create_team is False:
+            return None
+
+        # if user_id is not there in user_team, create a new team
+        team_id = self._create_team(user_team, user_id, user_name)
         return team_id
 
     def new_submission(self, user_token, uploaded_file, submission_comment):
@@ -404,10 +261,10 @@ class Submissions:
         user_info = self._get_user_info(user_token)
         submission_id = str(uuid.uuid4())
         user_id = user_info["id"]
-        team_id = self._get_team_id(user_info)
+        team_id = self._get_team_id(user_info, create_team=True)
 
         # check if team can submit to the competition
-        if self._check_team_submission_limit(team_id) is False:
+        if self._is_submission_allowed(team_id) is False:
             raise SubmissionLimitError("Submission limit reached")
 
         if self.competition_type == "generic":
@@ -471,7 +328,6 @@ class Submissions:
                 submission_comment=submission_comment,
                 submission_repo=uploaded_file,
                 space_id=space_id,
-                space_status=0,
             )
         remaining_submissions = self.submission_limit - submissions_made
         return remaining_submissions

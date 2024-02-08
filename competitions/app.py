@@ -1,8 +1,6 @@
-import datetime
 import os
 import threading
 
-import pandas as pd
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -122,13 +120,16 @@ async def get_leaderboard(request: Request, lb: str):
         max_selected_submissions=COMP_INFO.selection_limit,
         competition_id=COMPETITION_ID,
         token=HF_TOKEN,
+        scoring_metric=COMP_INFO.scoring_metric,
     )
-    if lb == "private":
-        current_utc_time = datetime.datetime.utcnow()
-        if current_utc_time < COMP_INFO.end_date:
-            return {"response": "Private leaderboard will be available after the competition ends."}
+    # if lb == "private":
+    #     current_utc_time = datetime.datetime.utcnow()
+    #     if current_utc_time < COMP_INFO.end_date:
+    #         return {"response": "Private leaderboard will be available after the competition ends."}
     df = leaderboard.fetch(private=lb == "private")
     logger.info(df)
+    if len(df) == 0:
+        return {"response": "No teams yet. Why not make a submission?"}
     resp = {"response": df.to_markdown(index=False)}
     return resp
 
@@ -144,7 +145,7 @@ async def my_submissions(request: Request, user: User):
         hardware=COMP_INFO.hardware,
     )
     try:
-        success_subs, failed_subs = sub.my_submissions(user.user_token)
+        subs = sub.my_submissions(user.user_token)
     except AuthenticationError:
         return {
             "response": {
@@ -153,12 +154,11 @@ async def my_submissions(request: Request, user: User):
                 "error": "**Invalid token**",
             }
         }
-    subs = pd.concat([success_subs, failed_subs], axis=0)
     subs = subs.to_dict(orient="records")
+    logger.info(subs)
     error = ""
     if len(subs) == 0:
         error = "**You have not made any submissions yet.**"
-        failed_subs = ""
         subs = ""
     submission_text = SUBMISSION_TEXT.format(COMP_INFO.submission_limit)
     submission_selection_text = SUBMISSION_SELECTION_TEXT.format(COMP_INFO.selection_limit)
