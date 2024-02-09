@@ -2,11 +2,11 @@ import enum
 
 
 class SubmissionStatus(enum.Enum):
-    PENDING = 0
-    QUEUED = 1
-    PROCESSING = 2
-    SUCCESS = 3
-    FAILED = 4
+    PENDING = "pending"
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    SUCCESS = "success"
+    FAILED = "failed"
 
 
 class CompetitionType(enum.Enum):
