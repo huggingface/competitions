@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import shlex
 import shutil
 import subprocess
 
@@ -50,8 +51,10 @@ def generate_submission_file(params):
     env = os.environ.copy()
     env["LD_PRELOAD"] = socket_kit_path
 
+    cmd = shlex.split(cmd)
+
     # Start the subprocess
-    process = subprocess.Popen(cmd, cwd=submission_dir, shell=True, env=env)
+    process = subprocess.Popen(cmd, cwd=submission_dir, env=env)
 
     # Wait for the process to complete or timeout
     try:
