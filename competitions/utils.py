@@ -202,3 +202,12 @@ def install_requirements(requirements_fname):
         return
     logger.info("No requirements.txt found. Skipping requirements installation.")
     return
+
+
+def can_user_submit_before_start(user_token, competition_organization):
+    user_info = user_authentication(token=user_token)
+    user_orgs = user_info.get("orgs", [])
+    for org in user_orgs:
+        if org["name"] == competition_organization:
+            return True
+    return False

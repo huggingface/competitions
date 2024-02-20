@@ -25,6 +25,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN", None)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COMPETITION_ID = os.getenv("COMPETITION_ID")
 OUTPUT_PATH = os.getenv("OUTPUT_PATH", "/tmp/model")
+START_DATE = os.getenv("START_DATE", "2000-12-1")
 
 disable_progress_bars()
 
@@ -184,6 +185,13 @@ async def new_submission(
     if submission_comment is None:
         submission_comment = ""
 
+    todays_date = datetime.datetime.now()
+    start_date = datetime.datetime.strptime(START_DATE, "%Y-%m-%d")
+    if todays_date < start_date:
+        comp_org = COMPETITION_ID.split("/")[0]
+        if not utils.can_user_submit_before_start(token, comp_org):
+            return {"response": "Competition has not started yet!"}
+
     sub = Submissions(
         end_date=COMP_INFO.end_date,
         submission_limit=COMP_INFO.submission_limit,
@@ -196,7 +204,7 @@ async def new_submission(
         if COMP_INFO.competition_type == "generic":
             resp = sub.new_submission(token, submission_file, submission_comment)
             return {"response": f"Success! You have {resp} submissions remaining today."}
-        elif COMP_INFO.competition_type == "script":
+        if COMP_INFO.competition_type == "script":
             resp = sub.new_submission(token, hub_model, submission_comment)
             return {"response": f"Success! You have {resp} submissions remaining today."}
     except AuthenticationError:
