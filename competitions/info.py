@@ -149,5 +149,7 @@ class CompetitionInfo:
         if self.config["EVAL_METRIC"] == "custom":
             if "SCORING_METRIC" not in self.config:
                 raise Exception("Please provide a single SCORING_METRIC in the competition config file: conf.json")
+            if self.config["SCORING_METRIC"] is None:
+                raise Exception("Please provide a single SCORING_METRIC in the competition config file: conf.json")
             return self.config["SCORING_METRIC"]
         return self.config["EVAL_METRIC"]

@@ -165,6 +165,7 @@ def _create(
         "LOGO": competition_logo,
         "DATASET": "",
         "SUBMISSION_FILENAMES": ["submission.csv"],
+        "SCORING_METRIC": "",
     }
     teams_json = {}
     user_team_json = {}

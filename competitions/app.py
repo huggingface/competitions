@@ -25,7 +25,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN", None)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COMPETITION_ID = os.getenv("COMPETITION_ID")
 OUTPUT_PATH = os.getenv("OUTPUT_PATH", "/tmp/model")
-START_DATE = os.getenv("START_DATE", "2000-12-1")
+START_DATE = os.getenv("START_DATE", "2000-12-31")
 
 disable_progress_bars()
 
