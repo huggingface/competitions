@@ -23,9 +23,11 @@ from competitions.text import SUBMISSION_SELECTION_TEXT, SUBMISSION_TEXT
 
 HF_TOKEN = os.environ.get("HF_TOKEN", None)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-COMPETITION_ID = os.getenv("COMPETITION_ID")
-OUTPUT_PATH = os.getenv("OUTPUT_PATH", "/tmp/model")
-START_DATE = os.getenv("START_DATE", "2000-12-31")
+COMPETITION_ID = os.environ.get("COMPETITION_ID")
+OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/tmp/model")
+START_DATE = os.environ.get("START_DATE", "2000-12-31")
+DISABLE_PUBLIC_LB = int(os.environ.get("DISABLE_PUBLIC_LB", 0))
+
 
 disable_progress_bars()
 
@@ -116,6 +118,9 @@ async def get_submission_info(request: Request):
 
 @app.get("/leaderboard/{lb}", response_class=JSONResponse)
 async def get_leaderboard(request: Request, lb: str):
+    if DISABLE_PUBLIC_LB == 1 and lb == "public":
+        return {"response": "Public leaderboard is disabled by the competition host."}
+
     leaderboard = Leaderboard(
         end_date=COMP_INFO.end_date,
         eval_higher_is_better=COMP_INFO.eval_higher_is_better,
