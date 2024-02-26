@@ -244,6 +244,31 @@
         });
 
     </script>
+    <script>
+        function makeApiRequest(url, callback) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    callback(response.response);
+                }
+            };
+            xhr.send();
+        }
+
+        function checkOAuth() {
+            var url = "/use_oauth";
+            makeApiRequest(url, function (response) {
+                if (response === 1) {
+                    document.getElementById("userToken").style.display = "none";
+                    document.getElementById("loginButton").style.display = "block";
+                }
+            });
+        }
+
+        window.onload = checkOAuth;
+    </script>
 </head>
 
 <body class="flex h-screen">
@@ -355,12 +380,17 @@
                         <span class="flex-1 ms-3 whitespace-nowrap">Team</span>
                     </a>
                 </li> -->
-                <li>
+                <li id="userToken">
                     <label for="user_token" class="text-xs font-medium">Hugging Face <a
                             href="https://huggingface.co/settings/tokens" target="_blank">Token</a> (read-only)
                     </label>
                     <input type="password" name="user_token" id="user_token"
                         class="mt-1 block w-full border border-gray-300 px-3 py-1.5 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </li>
+                <li id="loginButton" style="display: none;">
+                    <a href="/login/huggingface"
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Login with Hugging
+                        Face</a>
                 </li>
             </ul>
             <footer>

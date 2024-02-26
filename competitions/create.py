@@ -119,6 +119,9 @@ def _create_readme(competition_name):
     _readme += "sdk: docker\n"
     _readme += "pinned: false\n"
     _readme += "duplicated_from: autotrain-projects/autotrain-advanced\n"
+    _readme += "hf_oauth: true\n"
+    _readme += "hf_oauth_scopes:\n"
+    _readme += "  - read-repos\n"
     _readme += "---\n"
     _readme = io.BytesIO(_readme.encode())
     return _readme

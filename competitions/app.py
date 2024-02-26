@@ -16,6 +16,7 @@ from competitions import utils
 from competitions.errors import AuthenticationError
 from competitions.info import CompetitionInfo
 from competitions.leaderboard import Leaderboard
+from competitions.oauth import attach_oauth
 from competitions.runner import JobRunner
 from competitions.submissions import Submissions
 from competitions.text import SUBMISSION_SELECTION_TEXT, SUBMISSION_TEXT
@@ -27,7 +28,7 @@ COMPETITION_ID = os.environ.get("COMPETITION_ID")
 OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/tmp/model")
 START_DATE = os.environ.get("START_DATE", "2000-12-31")
 DISABLE_PUBLIC_LB = int(os.environ.get("DISABLE_PUBLIC_LB", 0))
-
+USE_OAUTH = int(os.environ.get("USE_OAUTH", 0))
 
 disable_progress_bars()
 
@@ -69,6 +70,9 @@ thread.start()
 
 
 app = FastAPI()
+if USE_OAUTH == 1:
+    attach_oauth(app)
+
 static_path = os.path.join(BASE_DIR, "static")
 app.mount("/static", StaticFiles(directory=static_path), name="static")
 templates_path = os.path.join(BASE_DIR, "templates")
@@ -90,6 +94,11 @@ async def read_form(request: Request):
         "competition_type": COMP_INFO.competition_type,
     }
     return templates.TemplateResponse("index.html", context)
+
+
+@app.get("/use_oauth", response_class=JSONResponse)
+async def use_oauth(request: Request):
+    return {"response": USE_OAUTH}
 
 
 @app.get("/competition_info", response_class=JSONResponse)
