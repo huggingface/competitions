@@ -5,7 +5,7 @@ import shlex
 import shutil
 import subprocess
 
-from huggingface_hub import HfApi, Repository, hf_hub_download, snapshot_download
+from huggingface_hub import HfApi, hf_hub_download, snapshot_download
 from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
 
@@ -109,7 +109,13 @@ def run(params):
             utils.uninstall_requirements(requirements_fname)
             utils.install_requirements(requirements_fname)
         if len(str(params.dataset).strip()) > 0:
-            _ = Repository(local_dir="/tmp/data", clone_from=params.dataset, token=params.token)
+            # _ = Repository(local_dir="/tmp/data", clone_from=params.dataset, token=params.token)
+            _ = snapshot_download(
+                repo_id=params.dataset,
+                local_dir="/tmp/data",
+                token=params.token,
+                repo_type="dataset",
+            )
         generate_submission_file(params)
 
     evaluation = compute_metrics(params)

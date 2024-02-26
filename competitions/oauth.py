@@ -28,15 +28,15 @@ def attach_oauth(app: fastapi.FastAPI):
     # Add `/login/huggingface`, `/login/callback` and `/logout` routes to enable OAuth in the Gradio app.
     # If the app is running in a Space, OAuth is enabled normally. Otherwise, we mock the "real" routes to make the
     # user log in with a fake user profile - without any calls to hf.co.
-    if os.environ.get("SPACE_ID") is not None:
-        _add_oauth_routes(app)
-    else:
-        _add_mocked_oauth_routes(app)
+    # if os.environ.get("SPACE_ID") is not None:
+    _add_oauth_routes(app)
+    # else:
+    #     _add_mocked_oauth_routes(app)
 
     # Session Middleware requires a secret key to sign the cookies. Let's use a hash
     # of the OAuth secret key to make it unique to the Space + updated in case OAuth
     # config gets updated.
-    session_secret = (OAUTH_CLIENT_SECRET or "") + "-v3"
+    session_secret = (OAUTH_CLIENT_SECRET or "") + "-v4"
     # ^ if we change the session cookie format in the future, we can bump the version of the session secret to make
     #   sure cookies are invalidated. Otherwise some users with an old cookie format might get a HTTP 500 error.
     app.add_middleware(
