@@ -96,7 +96,9 @@ async def read_form(request: Request):
     }
     return templates.TemplateResponse("index.html", context)
 
+
 @app.get("/oauth_login", response_class=HTMLResponse)
+async def oauth_login(request: Request):
     return RedirectResponse("/login/huggingface")
 
 
