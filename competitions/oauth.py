@@ -28,7 +28,7 @@ def attach_oauth(app: fastapi.FastAPI):
     # Add `/login/huggingface`, `/login/callback` and `/logout` routes to enable OAuth in the Gradio app.
     # If the app is running in a Space, OAuth is enabled normally. Otherwise, we mock the "real" routes to make the
     # user log in with a fake user profile - without any calls to hf.co.
-    if os.environ.get("SPACE_ID") is not None and os.environ.get("HF_TOKEN") is None:
+    if os.environ.get("SPACE_ID") is not None:
         _add_oauth_routes(app)
     else:
         _add_mocked_oauth_routes(app)
@@ -199,11 +199,11 @@ class OAuthToken:
 
 
 def _get_mocked_oauth_info() -> typing.Dict:
-    token = os.environ.get("HF_TOKEN")
+    token = os.environ.get("USER_HF_TOKEN")
     if token is None:
         raise ValueError(
             "Your machine must be logged in to HF to debug AutoTrain locally. Please "
-            "set `HF_TOKEN` as environment variable "
+            "set `USER_HF_TOKEN` as environment variable "
             "with one of your access token. You can generate a new token in your "
             "settings page (https://huggingface.co/settings/tokens)."
         )
