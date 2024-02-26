@@ -3,7 +3,7 @@ import os
 import threading
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from huggingface_hub import hf_hub_download
@@ -95,6 +95,9 @@ async def read_form(request: Request):
         "competition_type": COMP_INFO.competition_type,
     }
     return templates.TemplateResponse("index.html", context)
+
+@app.get("/oauth_login", response_class=HTMLResponse)
+    return RedirectResponse("/login/huggingface")
 
 
 @app.get("/use_oauth", response_class=JSONResponse)
