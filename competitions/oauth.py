@@ -6,16 +6,11 @@ from __future__ import annotations
 
 import hashlib
 import os
-import typing
 import urllib.parse
-import warnings
-from dataclasses import dataclass, field
 
 import fastapi
-import requests
 from authlib.integrations.starlette_client import OAuth
 from fastapi.responses import RedirectResponse
-from huggingface_hub import whoami
 from starlette.middleware.sessions import SessionMiddleware
 
 
@@ -32,8 +27,7 @@ def attach_oauth(app: fastapi.FastAPI):
     if os.environ.get("SPACE_ID") is not None and int(os.environ.get("USE_OAUTH", 0)) == 1:
         _add_oauth_routes(app)
     else:
-        _add_mocked_oauth_routes(app)
-
+        return
     # Session Middleware requires a secret key to sign the cookies. Let's use a hash
     # of the OAuth secret key to make it unique to the Space + updated in case OAuth
     # config gets updated.
@@ -79,17 +73,14 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
     async def oauth_login(request: fastapi.Request):
         """Endpoint that redirects to HF OAuth page."""
         # Define target (where to redirect after login)
-        redirect_uri = _generate_redirect_uri(request)
+        # redirect_uri = _generate_redirect_uri(request)
+        redirect_uri = request.url_for("auth")
         return await oauth.huggingface.authorize_redirect(request, redirect_uri)  # type: ignore
 
-    @app.get("/login/callback")
+    @app.get("/auth")
     async def oauth_redirect_callback(request: fastapi.Request) -> RedirectResponse:
         """Endpoint that handles the OAuth callback."""
         oauth_info = await oauth.huggingface.authorize_access_token(request)  # type: ignore
-        access_token = oauth_info["access_token"]
-        oauth_userinfo_endpoint = "https://huggingface.co/oauth/userinfo"
-        res = requests.post(oauth_userinfo_endpoint, headers={"Authorization": f"Bearer {access_token}"}, timeout=10)
-        oauth_info["_userinfo"] = res.json()
         request.session["oauth_info"] = oauth_info
         return _redirect_to_target(request)
 
@@ -98,39 +89,6 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
         """Endpoint that logs out the user (e.g. delete cookie session)."""
         request.session.pop("oauth_info", None)
         return _redirect_to_target(request)
-
-
-def _add_mocked_oauth_routes(app: fastapi.FastAPI) -> None:
-    """Add fake oauth routes if Gradio is run locally and OAuth is enabled.
-    Instead of authenticating with HF, a mocked user profile is added to the session.
-    """
-    warnings.warn(
-        "AutoTrain does not support OAuth features outside of a Space environment. To help"
-        " you debug your app locally, the login and logout buttons are mocked with your"
-        " profile. To make it work, your machine must be logged in to Huggingface."
-    )
-    mocked_oauth_info = _get_mocked_oauth_info()
-
-    # Define OAuth routes
-    @app.get("/login/huggingface")
-    async def oauth_login(request: fastapi.Request):  # noqa: ARG001
-        """Fake endpoint that redirects to HF OAuth page."""
-        # Define target (where to redirect after login)
-        redirect_uri = _generate_redirect_uri(request)
-        return RedirectResponse("/login/callback?" + urllib.parse.urlencode({"_target_url": redirect_uri}))
-
-    @app.get("/login/callback")
-    async def oauth_redirect_callback(request: fastapi.Request) -> RedirectResponse:
-        """Endpoint that handles the OAuth callback."""
-        request.session["oauth_info"] = mocked_oauth_info
-        return _redirect_to_target(request)
-
-    @app.get("/logout")
-    async def oauth_logout(request: fastapi.Request) -> RedirectResponse:
-        """Endpoint that logs out the user (e.g. delete cookie session)."""
-        request.session.pop("oauth_info", None)
-        logout_url = str(request.url).replace("/logout", "/")  # preserve query params
-        return RedirectResponse(url=logout_url)
 
 
 def _generate_redirect_uri(request: fastapi.Request) -> str:
@@ -150,95 +108,6 @@ def _generate_redirect_uri(request: fastapi.Request) -> str:
 
 
 def _redirect_to_target(request: fastapi.Request, default_target: str = "/") -> RedirectResponse:
-    target = request.query_params.get("_target_url", default_target)
+    # target = request.query_params.get("_target_url", default_target)
+    target = "https://huggingface.co/" + os.environ.get("SPACE_ID")
     return RedirectResponse(target)
-
-
-@dataclass
-class OAuthProfile(typing.Dict):  # inherit from Dict for backward compatibility
-    """
-    A OAuthProfile object that can be used to inject the profile of a user in a
-    function. If a function expects `OAuthProfile` or `Optional[OAuthProfile]` as input,
-    the value will be injected from the FastAPI session if the user is logged in. If the
-    user is not logged in and the function expects `OAuthProfile`, an error will be
-    raised.
-
-    Attributes:
-        name (str): The name of the user (e.g. 'abhishek').
-        username (str): The username of the user (e.g. 'abhishek')
-        profile (str): The profile URL of the user (e.g. 'https://huggingface.co/abhishek').
-        picture (str): The profile picture URL of the user.
-    """
-
-    name: str = field(init=False)
-    username: str = field(init=False)
-    profile: str = field(init=False)
-    picture: str = field(init=False)
-
-    def __init__(self, data: dict):  # hack to make OAuthProfile backward compatible
-        self.update(data)
-        self.name = self["name"]
-        self.username = self["preferred_username"]
-        self.profile = self["profile"]
-        self.picture = self["picture"]
-
-
-@dataclass
-class OAuthToken:
-    """
-    A Gradio OAuthToken object that can be used to inject the access token of a user in a
-    function. If a function expects `OAuthToken` or `Optional[OAuthToken]` as input,
-    the value will be injected from the FastAPI session if the user is logged in. If the
-    user is not logged in and the function expects `OAuthToken`, an error will be
-    raised.
-
-    Attributes:
-        token (str): The access token of the user.
-        scope (str): The scope of the access token.
-        expires_at (int): The expiration timestamp of the access token.
-    """
-
-    token: str
-    scope: str
-    expires_at: int
-
-
-def _get_mocked_oauth_info() -> typing.Dict:
-    token = os.environ.get("USER_HF_TOKEN")
-    if token is None:
-        raise ValueError(
-            "Your machine must be logged in to HF to debug AutoTrain locally. Please "
-            "set `USER_HF_TOKEN` as environment variable "
-            "with one of your access token. You can generate a new token in your "
-            "settings page (https://huggingface.co/settings/tokens)."
-        )
-
-    user = whoami(token=token)
-    if user["type"] != "user":
-        raise ValueError(
-            "Your machine is not logged in with a personal account. Please use a "
-            "personal access token. You can generate a new token in your settings page"
-            " (https://huggingface.co/settings/tokens)."
-        )
-
-    return {
-        "access_token": "hf_oauth_XXX",
-        "token_type": "bearer",
-        "expires_in": 28799,
-        "id_token": "XXX",
-        "scope": "openid profile read-repos",
-        "expires_at": 1709003175,
-        "userinfo": {
-            "sub": "123hello123",
-            "name": "my name",
-            "preferred_username": "me",
-            "profile": "https://huggingface.co/user",
-            "picture": "https://img",
-            "aud": "jksdahffasdk-435-3-dsf-a",
-            "auth_time": 1708974376,
-            "nonce": "jdkfghskfdjhgkfd",
-            "iat": 1708974376,
-            "exp": 1708977976,
-            "iss": "https://huggingface.co",
-        },
-    }
