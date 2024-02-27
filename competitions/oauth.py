@@ -73,8 +73,6 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
     @app.get("/login/huggingface")
     async def oauth_login(request: fastapi.Request):
         """Endpoint that redirects to HF OAuth page."""
-        # Define target (where to redirect after login)
-        # redirect_uri = _generate_redirect_uri(request)
         redirect_uri = request.url_for("auth")
         redirect_uri_as_str = str(redirect_uri)
         if redirect_uri.netloc.endswith(".hf.space"):
@@ -91,12 +89,6 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
             print("Session dict:", dict(request.session))
             raise
         request.session["oauth_info"] = oauth_info
-        return _redirect_to_target(request)
-
-    @app.get("/logout")
-    async def oauth_logout(request: fastapi.Request) -> RedirectResponse:
-        """Endpoint that logs out the user (e.g. delete cookie session)."""
-        request.session.pop("oauth_info", None)
         return _redirect_to_target(request)
 
 

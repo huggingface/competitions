@@ -103,6 +103,19 @@ async def oauth_login(request: Request):
     return RedirectResponse("/login/huggingface")
 
 
+@app.get("/logout", response_class=HTMLResponse)
+async def oauth_logout(request: Request):
+    """Endpoint that logs out the user (e.g. delete cookie session)."""
+    request.session.pop("oauth_info", None)
+    context = {
+        "request": request,
+        "logo": COMP_INFO.logo_url,
+        "competition_type": COMP_INFO.competition_type,
+    }
+
+    return templates.TemplateResponse("index.html", context)
+
+
 @app.get("/use_oauth", response_class=JSONResponse)
 async def use_oauth(request: Request):
     if request.session.get("oauth_info") is not None:
