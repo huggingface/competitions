@@ -2,7 +2,6 @@ import datetime
 import os
 import threading
 
-import requests
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -89,11 +88,6 @@ async def read_form(request: Request):
     """
     if USE_OAUTH == 1:
         logger.info(request.session.get("oauth_info"))
-        oauth_info = request.session.get("oauth_info")
-        access_token = oauth_info["access_token"]
-        oauth_userinfo_endpoint = "https://huggingface.co/oauth/userinfo"
-        res = requests.post(oauth_userinfo_endpoint, headers={"Authorization": f"Bearer {access_token}"}, timeout=10)
-        oauth_info["_userinfo"] = res.json()
     if HF_TOKEN is None:
         return templates.TemplateResponse("error.html", {"request": request})
     context = {
