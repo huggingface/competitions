@@ -32,12 +32,7 @@ def attach_oauth(app: fastapi.FastAPI):
     session_secret = (OAUTH_CLIENT_SECRET or "") + "-v4"
     # ^ if we change the session cookie format in the future, we can bump the version of the session secret to make
     #   sure cookies are invalidated. Otherwise some users with an old cookie format might get a HTTP 500 error.
-    app.add_middleware(
-        SessionMiddleware,
-        secret_key=hashlib.sha256(session_secret.encode()).hexdigest(),
-        same_site="none",
-        https_only=True,
-    )
+    app.add_middleware(SessionMiddleware, secret_key=hashlib.sha256(session_secret.encode()).hexdigest())
 
 
 def _add_oauth_routes(app: fastapi.FastAPI) -> None:
@@ -73,6 +68,10 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
         # Define target (where to redirect after login)
         # redirect_uri = _generate_redirect_uri(request)
         redirect_uri = request.url_for("auth")
+        redirect_uri_as_str = str(redirect_uri)
+        if redirect_uri.netloc.endswith(".hf.space"):
+            # In Space, FastAPI redirect as http but we want https
+            redirect_uri_as_str = redirect_uri_as_str.replace("http://", "https://")
         return await oauth.huggingface.authorize_redirect(request, redirect_uri)  # type: ignore
 
     @app.get("/auth")
