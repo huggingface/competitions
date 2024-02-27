@@ -117,5 +117,5 @@ def _generate_redirect_uri(request: fastapi.Request) -> str:
 
 def _redirect_to_target(request: fastapi.Request, default_target: str = "/") -> RedirectResponse:
     # target = request.query_params.get("_target_url", default_target)
-    target = "https://huggingface.co/" + os.environ.get("SPACE_ID")
+    target = "https://huggingface.co/spaces/" + os.environ.get("SPACE_ID")
     return RedirectResponse(target)
