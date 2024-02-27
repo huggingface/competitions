@@ -77,9 +77,8 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
         redirect_uri = request.url_for("auth")
         redirect_uri_as_str = str(redirect_uri)
         if redirect_uri.netloc.endswith(".hf.space"):
-            # In Space, FastAPI redirect as http but we want https
             redirect_uri_as_str = redirect_uri_as_str.replace("http://", "https://")
-        return await oauth.huggingface.authorize_redirect(request, redirect_uri)  # type: ignore
+        return await oauth.huggingface.authorize_redirect(request, redirect_uri_as_str)  # type: ignore
 
     @app.get("/auth")
     async def auth(request: fastapi.Request) -> RedirectResponse:
