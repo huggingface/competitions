@@ -22,9 +22,6 @@ OPENID_PROVIDER_URL = os.environ.get("OPENID_PROVIDER_URL")
 
 
 def attach_oauth(app: fastapi.FastAPI):
-    # Add `/login/huggingface`, `/login/callback` and `/logout` routes to enable OAuth in the Gradio app.
-    # If the app is running in a Space, OAuth is enabled normally. Otherwise, we mock the "real" routes to make the
-    # user log in with a fake user profile - without any calls to hf.co.
     if os.environ.get("SPACE_ID") is not None and int(os.environ.get("USE_OAUTH", 0)) == 1:
         _add_oauth_routes(app)
     else:
@@ -39,7 +36,7 @@ def attach_oauth(app: fastapi.FastAPI):
         SessionMiddleware,
         secret_key=hashlib.sha256(session_secret.encode()).hexdigest(),
         same_site="none",
-        # https_only=True,
+        https_only=True,
     )
 
 
@@ -74,12 +71,12 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
     async def oauth_login(request: fastapi.Request):
         """Endpoint that redirects to HF OAuth page."""
         # Define target (where to redirect after login)
-        redirect_uri = _generate_redirect_uri(request)
-        # redirect_uri = request.url_for("auth")
+        # redirect_uri = _generate_redirect_uri(request)
+        redirect_uri = request.url_for("auth")
         return await oauth.huggingface.authorize_redirect(request, redirect_uri)  # type: ignore
 
-    @app.get("/login/callback")
-    async def oauth_redirect_callback(request: fastapi.Request) -> RedirectResponse:
+    @app.get("/auth")
+    async def auth(request: fastapi.Request) -> RedirectResponse:
         """Endpoint that handles the OAuth callback."""
         # oauth_info = await oauth.huggingface.authorize_access_token(request)  # type: ignore
         try:
