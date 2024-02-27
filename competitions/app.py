@@ -216,16 +216,20 @@ async def my_submissions(request: Request, user: User):
 
 @app.post("/new_submission", response_class=JSONResponse)
 async def new_submission(
+    request: Request,
     submission_file: UploadFile = File(None),
     hub_model: str = Form(...),
-    token: str = Form(...),
+    token: str = Form(None),
     submission_comment: str = Form(None),
 ):
     if submission_comment is None:
         submission_comment = ""
 
-    # if request.session.get("oauth_info") is not None:
-    #     token = request.session.get("oauth_info")["access_token"]
+    if request.session.get("oauth_info") is not None:
+        token = request.session.get("oauth_info")["access_token"]
+
+    if token is None:
+        return {"response": "Invalid token"}
 
     todays_date = datetime.datetime.now()
     start_date = datetime.datetime.strptime(START_DATE, "%Y-%m-%d")
