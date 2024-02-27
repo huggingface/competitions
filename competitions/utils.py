@@ -182,8 +182,11 @@ def install_requirements(requirements_fname):
 
         with open(requirements_fname, "r", encoding="utf-8") as f:
             for line in f:
-                if not line.startswith("-"):
-                    install_list.append(line)
+                # if line startswith - then skip but dont skip if line startswith --
+                if line.startswith("-"):
+                    if not line.startswith("--"):
+                        continue
+                install_list.append(line)
 
         with open("install.txt", "w", encoding="utf-8") as f:
             for line in install_list:
