@@ -39,7 +39,7 @@ def attach_oauth(app: fastapi.FastAPI):
         SessionMiddleware,
         secret_key=hashlib.sha256(session_secret.encode()).hexdigest(),
         same_site="none",
-        https_only=True,
+        # https_only=True,
     )
 
 
