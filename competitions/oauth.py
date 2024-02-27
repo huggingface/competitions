@@ -9,6 +9,7 @@ import os
 import urllib.parse
 
 import fastapi
+from authlib.integrations.base_client.errors import MismatchingStateError
 from authlib.integrations.starlette_client import OAuth
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -73,14 +74,19 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
     async def oauth_login(request: fastapi.Request):
         """Endpoint that redirects to HF OAuth page."""
         # Define target (where to redirect after login)
-        # redirect_uri = _generate_redirect_uri(request)
-        redirect_uri = request.url_for("auth")
+        redirect_uri = _generate_redirect_uri(request)
+        # redirect_uri = request.url_for("auth")
         return await oauth.huggingface.authorize_redirect(request, redirect_uri)  # type: ignore
 
-    @app.get("/auth")
+    @app.get("/login/callback")
     async def oauth_redirect_callback(request: fastapi.Request) -> RedirectResponse:
         """Endpoint that handles the OAuth callback."""
-        oauth_info = await oauth.huggingface.authorize_access_token(request)  # type: ignore
+        # oauth_info = await oauth.huggingface.authorize_access_token(request)  # type: ignore
+        try:
+            oauth_info = await oauth.huggingface.authorize_access_token(request)  # type: ignore
+        except MismatchingStateError:
+            print("Session dict:", dict(request.session))
+            raise
         request.session["oauth_info"] = oauth_info
         return _redirect_to_target(request)
 
