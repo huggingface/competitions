@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import hashlib
 import os
+import random
+import string
 import urllib.parse
 
 import fastapi
@@ -19,6 +21,7 @@ OAUTH_CLIENT_ID = os.environ.get("OAUTH_CLIENT_ID")
 OAUTH_CLIENT_SECRET = os.environ.get("OAUTH_CLIENT_SECRET")
 OAUTH_SCOPES = os.environ.get("OAUTH_SCOPES")
 OPENID_PROVIDER_URL = os.environ.get("OPENID_PROVIDER_URL")
+RANDOM_STRING = "".join(random.choices(string.ascii_letters + string.digits, k=20))
 
 
 def attach_oauth(app: fastapi.FastAPI):
@@ -29,7 +32,7 @@ def attach_oauth(app: fastapi.FastAPI):
     # Session Middleware requires a secret key to sign the cookies. Let's use a hash
     # of the OAuth secret key to make it unique to the Space + updated in case OAuth
     # config gets updated.
-    session_secret = (OAUTH_CLIENT_SECRET or "") + "-v4"
+    session_secret = OAUTH_CLIENT_SECRET + RANDOM_STRING
     # ^ if we change the session cookie format in the future, we can bump the version of the session secret to make
     #   sure cookies are invalidated. Otherwise some users with an old cookie format might get a HTTP 500 error.
     app.add_middleware(
