@@ -86,7 +86,8 @@ async def read_form(request: Request):
     :param request:
     :return:
     """
-    logger.info(request.session.get("oauth_info"))
+    if USE_OAUTH == 1:
+        logger.info(request.session.get("oauth_info"))
     if HF_TOKEN is None:
         return templates.TemplateResponse("error.html", {"request": request})
     context = {
