@@ -12,6 +12,7 @@ import warnings
 from dataclasses import dataclass, field
 
 import fastapi
+import requests
 from authlib.integrations.starlette_client import OAuth
 from fastapi.responses import RedirectResponse
 from huggingface_hub import whoami
@@ -28,10 +29,10 @@ def attach_oauth(app: fastapi.FastAPI):
     # Add `/login/huggingface`, `/login/callback` and `/logout` routes to enable OAuth in the Gradio app.
     # If the app is running in a Space, OAuth is enabled normally. Otherwise, we mock the "real" routes to make the
     # user log in with a fake user profile - without any calls to hf.co.
-    # if os.environ.get("SPACE_ID") is not None:
-    _add_oauth_routes(app)
-    # else:
-    #     _add_mocked_oauth_routes(app)
+    if os.environ.get("SPACE_ID") is not None and int(os.environ.get("USE_OAUTH", 0)) == 1:
+        _add_oauth_routes(app)
+    else:
+        _add_mocked_oauth_routes(app)
 
     # Session Middleware requires a secret key to sign the cookies. Let's use a hash
     # of the OAuth secret key to make it unique to the Space + updated in case OAuth
@@ -85,6 +86,10 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
     async def oauth_redirect_callback(request: fastapi.Request) -> RedirectResponse:
         """Endpoint that handles the OAuth callback."""
         oauth_info = await oauth.huggingface.authorize_access_token(request)  # type: ignore
+        access_token = oauth_info["access_token"]
+        oauth_userinfo_endpoint = "https://huggingface.co/oauth/userinfo"
+        res = requests.post(oauth_userinfo_endpoint, headers={"Authorization": f"Bearer {access_token}"}, timeout=10)
+        oauth_info["_userinfo"] = res.json()
         request.session["oauth_info"] = oauth_info
         return _redirect_to_target(request)
 
@@ -217,24 +222,23 @@ def _get_mocked_oauth_info() -> typing.Dict:
         )
 
     return {
-        "access_token": token,
+        "access_token": "hf_oauth_XXX",
         "token_type": "bearer",
-        "expires_in": 3600,
-        "id_token": "AAAAAAAAAAAAAAAAAAAAAAAAAA",
-        "scope": "openid profile",
-        "expires_at": 1691676444,
+        "expires_in": 28799,
+        "id_token": "XXX",
+        "scope": "openid profile read-repos",
+        "expires_at": 1709003175,
         "userinfo": {
-            "sub": "11111111111111111111111",
-            "name": user["fullname"],
-            "preferred_username": user["name"],
-            "profile": f"https://huggingface.co/{user['name']}",
-            "picture": user["avatarUrl"],
-            "website": "",
-            "aud": "00000000-0000-0000-0000-000000000000",
-            "auth_time": 1691672844,
-            "nonce": "aaaaaaaaaaaaaaaaaaa",
-            "iat": 1691672844,
-            "exp": 1691676444,
+            "sub": "123hello123",
+            "name": "my name",
+            "preferred_username": "me",
+            "profile": "https://huggingface.co/user",
+            "picture": "https://img",
+            "aud": "jksdahffasdk-435-3-dsf-a",
+            "auth_time": 1708974376,
+            "nonce": "jdkfghskfdjhgkfd",
+            "iat": 1708974376,
+            "exp": 1708977976,
             "iss": "https://huggingface.co",
         },
     }
