@@ -161,8 +161,8 @@ class Submissions:
         if "error" in user_info:
             raise AuthenticationError("Invalid token")
 
-        if user_info["emailVerified"] is False:
-            raise AuthenticationError("Please verify your email on Hugging Face Hub")
+        # if user_info["emailVerified"] is False:
+        #     raise AuthenticationError("Please verify your email on Hugging Face Hub")
         return user_info
 
     def my_submissions(self, user_token):

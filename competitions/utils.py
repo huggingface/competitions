@@ -16,6 +16,10 @@ from . import HF_URL
 
 
 def user_authentication(token):
+    if token.startswith("hf_oauth"):
+        _api_url = HF_URL + "/oauth/userinfo"
+    else:
+        _api_url = HF_URL + "/api/whoami-v2"
     headers = {}
     cookies = {}
     if token.startswith("hf_"):
@@ -24,7 +28,7 @@ def user_authentication(token):
         cookies = {"token": token}
     try:
         response = requests.get(
-            HF_URL + "/api/whoami-v2",
+            _api_url,
             headers=headers,
             cookies=cookies,
             timeout=3,
@@ -32,7 +36,19 @@ def user_authentication(token):
     except (requests.Timeout, ConnectionError) as err:
         logger.error(f"Failed to request whoami-v2 - {repr(err)}")
         raise Exception("Hugging Face Hub is unreachable, please try again later.")
-    return response.json()
+    resp = response.json()
+    user_info = {}
+    if "error" in resp:
+        return resp
+    if token.startswith("hf_oauth"):
+        user_info["id"] = resp["userinfo"]["sub"]
+        user_info["name"] = resp["userinfo"]["preferred_username"]
+        user_info["orgs"] = []
+    else:
+        user_info["id"] = resp["id"]
+        user_info["name"] = resp["name"]
+        user_info["orgs"] = resp["orgs"]
+    return user_info
 
 
 def make_clickable_user(user_id):
