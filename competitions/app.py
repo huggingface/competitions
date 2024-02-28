@@ -116,8 +116,9 @@ async def oauth_logout(request: Request):
 
 @app.get("/use_oauth", response_class=JSONResponse)
 async def use_oauth(request: Request):
-    if request.session.get("oauth_info") is not None:
-        return {"response": 2}
+    if USE_OAUTH == 1:
+        if request.session.get("oauth_info") is not None:
+            return {"response": 2}
     return {"response": USE_OAUTH}
 
 
@@ -172,8 +173,9 @@ async def get_leaderboard(request: Request, lb: str):
 
 @app.post("/my_submissions", response_class=JSONResponse)
 async def my_submissions(request: Request, user: User):
-    if request.session.get("oauth_info") is not None:
-        user.user_token = request.session.get("oauth_info")["access_token"]
+    if USE_OAUTH == 1:
+        if request.session.get("oauth_info") is not None:
+            user.user_token = request.session.get("oauth_info")["access_token"]
 
     sub = Submissions(
         end_date=COMP_INFO.end_date,
@@ -223,8 +225,9 @@ async def new_submission(
     if submission_comment is None:
         submission_comment = ""
 
-    if request.session.get("oauth_info") is not None:
-        token = request.session.get("oauth_info")["access_token"]
+    if USE_OAUTH == 1:
+        if request.session.get("oauth_info") is not None:
+            token = request.session.get("oauth_info")["access_token"]
 
     if token is None:
         return {"response": "Invalid token"}
@@ -258,8 +261,9 @@ async def new_submission(
 
 @app.post("/update_selected_submissions", response_class=JSONResponse)
 def update_selected_submissions(request: Request, user_sub: UserSubmissionUpdate):
-    if request.session.get("oauth_info") is not None:
-        user_sub.user_token = request.session.get("oauth_info")["access_token"]
+    if USE_OAUTH == 1:
+        if request.session.get("oauth_info") is not None:
+            user_sub.user_token = request.session.get("oauth_info")["access_token"]
 
     sub = Submissions(
         end_date=COMP_INFO.end_date,
