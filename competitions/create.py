@@ -253,6 +253,7 @@ def _create(
         private=True,
     )
     api.add_space_secret(repo_id=f"{organization}/{competition_name}", key="HF_TOKEN", value=user_token)
+    api.add_space_secret(repo_id=f"{organization}/{competition_name}", key="USE_OAUTH", value="1")
     api.add_space_secret(
         repo_id=f"{organization}/{competition_name}",
         key="COMPETITION_ID",
