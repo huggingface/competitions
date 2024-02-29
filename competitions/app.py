@@ -51,6 +51,11 @@ if REQUIREMENTS_FNAME:
     utils.install_requirements(REQUIREMENTS_FNAME)
 
 
+class UserTeamNameUpdate(BaseModel):
+    user_token: str
+    new_team_name: str
+
+
 class User(BaseModel):
     user_token: str
 
@@ -193,6 +198,7 @@ async def my_submissions(request: Request, user: User):
                 "submissions": "",
                 "submission_text": SUBMISSION_TEXT.format(COMP_INFO.submission_limit),
                 "error": "**Invalid token**",
+                "team_name": "",
             }
         }
     subs = subs.to_dict(orient="records")
@@ -204,11 +210,14 @@ async def my_submissions(request: Request, user: User):
     submission_text = SUBMISSION_TEXT.format(COMP_INFO.submission_limit)
     submission_selection_text = SUBMISSION_SELECTION_TEXT.format(COMP_INFO.selection_limit)
 
+    team_name = utils.get_team_name(user.user_token, COMPETITION_ID, HF_TOKEN)
+
     resp = {
         "response": {
             "submissions": subs,
             "submission_text": submission_text + submission_selection_text,
             "error": error,
+            "team_name": team_name,
         }
     }
     return resp
@@ -282,3 +291,18 @@ def update_selected_submissions(request: Request, user_sub: UserSubmissionUpdate
         }
     sub.update_selected_submissions(user_token=user_sub.user_token, selected_submission_ids=submission_ids)
     return {"success": True, "error": ""}
+
+
+@app.post("/update_team_name", response_class=JSONResponse)
+def update_team_name(request: Request, user_team: UserTeamNameUpdate):
+    if USE_OAUTH == 1:
+        if request.session.get("oauth_info") is not None:
+            user_token = request.session.get("oauth_info")["access_token"]
+
+    user_token = user_team.user_token
+
+    try:
+        utils.update_team_name(user_token, user_team.new_team_name, COMPETITION_ID, HF_TOKEN)
+        return {"success": True, "error": ""}
+    except Exception as e:
+        return {"success": False, "error": str(e)}

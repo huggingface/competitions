@@ -230,3 +230,73 @@ def can_user_submit_before_start(user_token, competition_organization):
         if org["name"] == competition_organization:
             return True
     return False
+
+
+def get_team_name(user_token, competition_id, hf_token):
+    user_info = user_authentication(token=user_token)
+    user_id = user_info["id"]
+    user_team = hf_hub_download(
+        repo_id=competition_id,
+        filename="user_team.json",
+        token=hf_token,
+        repo_type="dataset",
+    )
+    with open(user_team, "r", encoding="utf-8") as f:
+        user_team = json.load(f)
+
+    if user_id not in user_team:
+        return None
+
+    team_id = user_team[user_id]
+
+    team_metadata = hf_hub_download(
+        repo_id=competition_id,
+        filename="teams.json",
+        token=hf_token,
+        repo_type="dataset",
+    )
+    with open(team_metadata, "r", encoding="utf-8") as f:
+        team_metadata = json.load(f)
+
+    team_name = team_metadata[team_id]["name"]
+    return team_name
+
+
+def update_team_name(user_token, new_team_name, competition_id, hf_token):
+    user_info = user_authentication(token=user_token)
+    user_id = user_info["id"]
+    user_team = hf_hub_download(
+        repo_id=competition_id,
+        filename="user_team.json",
+        token=hf_token,
+        repo_type="dataset",
+    )
+    with open(user_team, "r", encoding="utf-8") as f:
+        user_team = json.load(f)
+
+    if user_id not in user_team:
+        raise Exception("User is not part of a team")
+
+    team_id = user_team[user_id]
+
+    team_metadata = hf_hub_download(
+        repo_id=competition_id,
+        filename="teams.json",
+        token=hf_token,
+        repo_type="dataset",
+    )
+    with open(team_metadata, "r", encoding="utf-8") as f:
+        team_metadata = json.load(f)
+
+    team_metadata[team_id]["name"] = new_team_name
+    team_metadata_json = json.dumps(team_metadata, indent=4)
+    team_metadata_json_bytes = team_metadata_json.encode("utf-8")
+    team_metadata_json_buffer = io.BytesIO(team_metadata_json_bytes)
+    api = HfApi(token=hf_token)
+    api.upload_file(
+        path_or_fileobj=team_metadata_json_buffer,
+        path_in_repo="teams.json",
+        repo_id=competition_id,
+        repo_type="dataset",
+    )
+    return new_team_name

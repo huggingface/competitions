@@ -137,7 +137,12 @@
                         // contentDiv.innerHTML = marked.parse(data.response.submission_text) + data.response.submissions;
                         if (data.response.submissions && data.response.submissions.length > 0 && data.response.error.length == 0) {
                             // Start building the table HTML
-                            let tableHTML = '<table border="1"><tr><th>Datetime</th><th>Submission ID</th><th>Public Score</th><th>Submission Comment</th><th>Selected</th><th>Status</th></tr>';
+                            let tableHTML = `
+                                <div class="flex items-center">
+                                    <input type="text" name="team_name" id="team_name" class="mt-1 mb-1 block me-2" value="${data.response.team_name}">
+                                    <button id="updateTeamNameButton" type="button" class="confirm text-white bg-green-600 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center me-2">Update Team Name</button>
+                                </div>`;
+                            tableHTML += '<table border="1"><tr><th>Datetime</th><th>Submission ID</th><th>Public Score</th><th>Submission Comment</th><th>Selected</th><th>Status</th></tr>';
 
                             // Iterate over each submission and add it to the table
                             data.response.submissions.forEach(submission => {
@@ -154,9 +159,13 @@
                             // Close the table HTML and set it as the content
                             tableHTML += '</table>';
                             tableHTML += '<button id="updateSelectedSubmissionsButton" type="button" class="confirm text-white bg-green-600 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center me-2">Update Selected Submissions</button>';
+                            // add a text field which displays team name and a button to update team name
                             contentDiv.innerHTML = marked.parse(data.response.submission_text) + tableHTML;
                             document.getElementById('updateSelectedSubmissionsButton').addEventListener('click', function () {
                                 updateSelectedSubmissions(userToken);
+                            });
+                            document.getElementById('updateTeamNameButton').addEventListener('click', function () {
+                                updateTeamName(userToken);
                             });
                         } else {
                             // Display message if there are no submissions
@@ -192,6 +201,45 @@
                     });
             }
 
+            function fetchAndDisplayTeamInfo() {
+                const apiEndpoint = '/team_info';
+                const userToken = document.getElementById('user_token').value;
+                const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
+                articleLoadingSpinner.classList.remove('hidden');
+
+                const requestOptions = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ "user_token": userToken })
+                };
+                fetch(apiEndpoint, requestOptions)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json(); // Parse the JSON response
+                    })
+                    .then(data => {
+                        // Populate the 'content' div with the HTML from the response
+                        const contentDiv = document.getElementById('content');
+                        if (data.team_exists) {
+                            contentHTML = "<h2>Team</h2>";
+                            contentHTML += "<p>" + data.team_name + "</p>";
+                            contentDiv.innerHTML = marked.parse(contentHTML);
+                        } else {
+                            contentDiv.innerHTML = marked.parse(data.response);
+                        }
+                        contentDiv.innerHTML = marked.parse(data.response);
+                        articleLoadingSpinner.classList.add('hidden');
+                    })
+                    .catch(error => {
+                        console.error('There has been a problem with your fetch operation:', error);
+                        articleLoadingSpinner.classList.add('hidden');
+                    });
+            }
+
             // Find the 'Home' link in the sidebar
             const homeLink = document.getElementById('home');
             const datasetLink = document.getElementById('dataset');
@@ -200,6 +248,7 @@
             const newSubmission = document.getElementById('new_submission');
             const mySubmissions = document.getElementById('my_submissions');
             const submissionInfo = document.getElementById('submission_info');
+            const teamLink = document.getElementById('team');
 
             // Add a click event listener to the 'Home' link
             homeLink.addEventListener('click', function (event) {
@@ -233,6 +282,10 @@
             submissionInfo.addEventListener('click', function (event) {
                 event.preventDefault(); // Prevent the default link behavior
                 fetchAndDisplaySubmissionInfo(); // Fetch and display info on click
+            });
+            teamLink.addEventListener('click', function (event) {
+                event.preventDefault(); // Prevent the default link behavior
+                fetchAndDisplayTeamInfo(); // Fetch and display info on click
             });
 
             // Fetch and display info when the page loads
@@ -308,6 +361,17 @@
                     </a>
                 </li>
                 <li>
+                    <a href="#" id="team" class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100">
+                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
+                            aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                            viewBox="0 0 20 18">
+                            <path
+                                d="M14 2a3.963 3.963 0 0 0-1.4.267 6.439 6.439 0 0 1-1.331 6.638A4 4 0 1 0 14 2Zm1 9h-1.264A6.957 6.957 0 0 1 15 15v2a2.97 2.97 0 0 1-.184 1H19a1 1 0 0 0 1-1v-1a5.006 5.006 0 0 0-5-5ZM6.5 9a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9ZM8 10H5a5.006 5.006 0 0 0-5 5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2a5.006 5.006 0 0 0-5-5Z" />
+                        </svg>
+                        <span class="flex-1 ms-3 whitespace-nowrap">Team</span>
+                    </a>
+                </li>
+                <li>
                     <button type="button"
                         class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100"
                         aria-controls="lb-dropdown" data-collapse-toggle="lb-dropdown">
@@ -373,18 +437,6 @@
                         </li>
                     </ul>
                 </li>
-                <!-- <li>
-                    <a href="#"
-                        class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100">
-                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
-                            aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
-                            viewBox="0 0 20 18">
-                            <path
-                                d="M14 2a3.963 3.963 0 0 0-1.4.267 6.439 6.439 0 0 1-1.331 6.638A4 4 0 1 0 14 2Zm1 9h-1.264A6.957 6.957 0 0 1 15 15v2a2.97 2.97 0 0 1-.184 1H19a1 1 0 0 0 1-1v-1a5.006 5.006 0 0 0-5-5ZM6.5 9a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9ZM8 10H5a5.006 5.006 0 0 0-5 5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2a5.006 5.006 0 0 0-5-5Z" />
-                        </svg>
-                        <span class="flex-1 ms-3 whitespace-nowrap">Team</span>
-                    </a>
-                </li> -->
                 <li id="userToken">
                     <label for="user_token" class="text-xs font-medium">Hugging Face <a
                             href="https://huggingface.co/settings/tokens" target="_blank">Token</a> (read-only)
@@ -551,6 +603,51 @@
             body: JSON.stringify({
                 "user_token": userToken,
                 "submission_ids": selectedSubmissionIds.join(',')
+            })
+        };
+
+        fetch(updateEndpoint, requestOptions)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Optionally, display a success message or handle accordingly
+                    console.log('Update successful');
+                    articleLoadingSpinner.classList.add('hidden');
+                } else {
+                    // Handle failure case
+                    console.log('Update failed');
+                    articleLoadingSpinner.classList.add('hidden');
+                    alert(data.error);
+                }
+                // Refresh submissions display
+                fetchAndDisplaySubmissions();
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation for updating:', error);
+            });
+    }
+</script>
+
+<script>
+    function updateTeamName(userToken) {
+        const teamName = document.getElementById('team_name').value;
+        const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
+        articleLoadingSpinner.classList.remove('hidden');
+
+        const updateEndpoint = '/update_team_name';
+        const requestOptions = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                "user_token": userToken,
+                "new_team_name": teamName
             })
         };
 
