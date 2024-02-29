@@ -248,7 +248,6 @@
             const newSubmission = document.getElementById('new_submission');
             const mySubmissions = document.getElementById('my_submissions');
             const submissionInfo = document.getElementById('submission_info');
-            const teamLink = document.getElementById('team');
 
             // Add a click event listener to the 'Home' link
             homeLink.addEventListener('click', function (event) {
@@ -282,10 +281,6 @@
             submissionInfo.addEventListener('click', function (event) {
                 event.preventDefault(); // Prevent the default link behavior
                 fetchAndDisplaySubmissionInfo(); // Fetch and display info on click
-            });
-            teamLink.addEventListener('click', function (event) {
-                event.preventDefault(); // Prevent the default link behavior
-                fetchAndDisplayTeamInfo(); // Fetch and display info on click
             });
 
             // Fetch and display info when the page loads
