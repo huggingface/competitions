@@ -22,5 +22,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+
+
+      - name: Get Commit ID
+        run: echo "VERSION_COMMIT_ID=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build and Push Docker Image
         run: make docker

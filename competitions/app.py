@@ -29,6 +29,7 @@ OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/tmp/model")
 START_DATE = os.environ.get("START_DATE", "2000-12-31")
 DISABLE_PUBLIC_LB = int(os.environ.get("DISABLE_PUBLIC_LB", 0))
 USE_OAUTH = int(os.environ.get("USE_OAUTH", 0))
+VERSION_COMMIT_ID = os.environ.get("VERSION_COMMIT_ID", "0687567")
 
 disable_progress_bars()
 
@@ -97,6 +98,7 @@ async def read_form(request: Request):
         "request": request,
         "logo": COMP_INFO.logo_url,
         "competition_type": COMP_INFO.competition_type,
+        "version_commit_id": VERSION_COMMIT_ID[:7],
     }
     return templates.TemplateResponse("index.html", context)
 
