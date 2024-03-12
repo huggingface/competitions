@@ -23,4 +23,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build and Push Docker Image
-        run: make docker
+        run: |
+          docker build --build-arg VERSION_COMMIT_ID=${GITHUB_SHA} -t competitions:latest .
+          docker tag competitions:latest huggingface/competitions:latest
+          docker push huggingface/competitions:latest
