@@ -24,6 +24,6 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build --build-arg VERSION_COMMIT_ID=${GITHUB_SHA} -t competitions:latest .
+          docker build --build-arg="VERSION_COMMIT_ID={{ env.GITHUB_SHA_SHORT }}" -t competitions:latest .
           docker tag competitions:latest huggingface/competitions:latest
           docker push huggingface/competitions:latest
