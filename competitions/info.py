@@ -50,12 +50,12 @@ class CompetitionInfo:
                 )
 
     def load_md(self, md_path):
-        with open(md_path) as f:
+        with open(md_path, "r", encoding="utf-8") as f:
             md = f.read()
         return md
 
     def load_config(self, config_path):
-        with open(config_path) as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
         return config
 
