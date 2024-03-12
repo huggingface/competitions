@@ -6,7 +6,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 ENV PATH="${HOME}/miniconda3/bin:${PATH}"
 ARG PATH="${HOME}/miniconda3/bin:${PATH}"
-ENV VERSION_COMMIT_ID 0687567
+ARG VERSION_COMMIT_ID 0687567
+ENV VERSION_COMMIT_ID=${VERSION_COMMIT_ID}
 
 RUN mkdir -p /tmp/model && \
     chown -R 1000:1000 /tmp/model && \
