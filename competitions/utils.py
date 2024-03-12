@@ -48,7 +48,7 @@ def user_authentication(token):
 
         user_info["id"] = resp["id"]
         user_info["name"] = resp["name"]
-        user_info["orgs"] = resp["orgs"]
+        user_info["orgs"] = [resp["orgs"][k]["name"] for k in range(len(resp["orgs"]))]
     return user_info
 
 
@@ -228,7 +228,7 @@ def can_user_submit_before_start(user_token, competition_organization):
     user_info = user_authentication(token=user_token)
     user_orgs = user_info.get("orgs", [])
     for org in user_orgs:
-        if org["name"] == competition_organization:
+        if org == competition_organization:
             return True
     return False
 
