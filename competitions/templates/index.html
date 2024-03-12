@@ -283,9 +283,7 @@
                 fetchAndDisplaySubmissionInfo(); // Fetch and display info on click
             });
 
-            // Fetch and display info wh
-            
-            en the page loads
+            // Fetch and display info when the page loads
             fetchAndDisplayCompetitionInfo();
 
             document.querySelector('#submission-modal .cancel').addEventListener('click', function () {
@@ -294,6 +292,9 @@
         });
 
     </script>
+
+
+
     <script>
         function makeApiRequest(url, callback) {
             var xhr = new XMLHttpRequest();
