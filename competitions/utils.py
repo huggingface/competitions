@@ -43,8 +43,9 @@ def user_authentication(token):
     if token.startswith("hf_oauth"):
         user_info["id"] = resp["sub"]
         user_info["name"] = resp["preferred_username"]
-        user_info["orgs"] = []
+        user_info["orgs"] = [resp["orgs"][k]["preferred_username"] for k in range(len(resp["orgs"]))]
     else:
+
         user_info["id"] = resp["id"]
         user_info["name"] = resp["name"]
         user_info["orgs"] = resp["orgs"]
