@@ -31,14 +31,15 @@ RUN apt-get update &&  \
     git-lfs \
     libgl1 \
     unzip \
+    openjdk-11-jre-headless \
     && rm -rf /var/lib/apt/lists/* && \
     apt-get clean
-
 
 RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
     git lfs install
 
 WORKDIR /app
+
 RUN mkdir -p /app/.cache
 ENV HF_HOME="/app/.cache"
 RUN chown -R 1000:1000 /app
