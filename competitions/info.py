@@ -43,6 +43,17 @@ class CompetitionInfo:
         except Exception:
             self.submission_desc = None
 
+        try:
+            rules_md = hf_hub_download(
+                repo_id=self.competition_id,
+                filename="RULES.md",
+                use_auth_token=self.autotrain_token,
+                repo_type="dataset",
+            )
+            self.rules_md = self.load_md(rules_md)
+        except Exception:
+            self.rules_md = None
+
         if self.config["EVAL_METRIC"] == "custom":
             if "SCORING_METRIC" not in self.config:
                 raise ValueError(
@@ -144,3 +155,7 @@ class CompetitionInfo:
                 raise Exception("Please provide a single SCORING_METRIC in the competition config file: conf.json")
             return self.config["SCORING_METRIC"]
         return self.config["EVAL_METRIC"]
+
+    @property
+    def rules(self):
+        return self.rules_md

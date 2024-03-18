@@ -2,6 +2,7 @@ import datetime
 import os
 import threading
 
+import requests
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -34,7 +35,7 @@ VERSION_COMMIT_ID = os.environ.get("VERSION_COMMIT_ID", "0687567")
 disable_progress_bars()
 
 COMP_INFO = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
-
+RULES_AVAILABLE = COMP_INFO.rules is not None
 
 try:
     REQUIREMENTS_FNAME = hf_hub_download(
@@ -99,6 +100,7 @@ async def read_form(request: Request):
         "logo": COMP_INFO.logo_url,
         "competition_type": COMP_INFO.competition_type,
         "version_commit_id": VERSION_COMMIT_ID[:7],
+        "rules_available": RULES_AVAILABLE,
     }
     return templates.TemplateResponse("index.html", context)
 
@@ -125,7 +127,11 @@ async def oauth_logout(request: Request):
 async def use_oauth(request: Request):
     if USE_OAUTH == 1:
         if request.session.get("oauth_info") is not None:
-            return {"response": 2}
+            try:
+                utils.user_authentication(request.session.get("oauth_info")["access_token"])
+                return {"response": 2}
+            except requests.exceptions.JSONDecodeError:
+                return {"response": USE_OAUTH}
     return {"response": USE_OAUTH}
 
 
@@ -143,6 +149,13 @@ async def get_dataset_info(request: Request):
     # info = markdown.markdown(info)
     resp = {"response": info}
     return resp
+
+
+@app.get("/rules", response_class=JSONResponse)
+async def get_rules(request: Request):
+    if COMP_INFO.rules is not None:
+        return {"response": COMP_INFO.rules}
+    return {"response": "No rules available."}
 
 
 @app.get("/submission_info", response_class=JSONResponse)
