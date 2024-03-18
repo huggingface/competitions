@@ -131,6 +131,7 @@ async def use_oauth(request: Request):
                 utils.user_authentication(request.session.get("oauth_info")["access_token"])
                 return {"response": 2}
             except requests.exceptions.JSONDecodeError:
+                request.session.pop("oauth_info", None)
                 return {"response": USE_OAUTH}
     return {"response": USE_OAUTH}
 
