@@ -309,6 +309,7 @@
                 fetchAndDisplayRules(); // Fetch and display info on click
             });
 
+
             // Fetch and display info when the page loads
             fetchAndDisplayCompetitionInfo();
 
@@ -318,8 +319,6 @@
         });
 
     </script>
-
-
 
     <script>
         function makeApiRequest(url, callback) {
@@ -397,6 +396,8 @@
                         <span class="flex-1 ms-3 whitespace-nowrap">Rules</span>
                     </a>
                 </li>
+                {% else %}
+                <span id="rules"></span>
                 {% endif %}
                 <li>
                     <button type="button"
