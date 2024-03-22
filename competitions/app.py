@@ -313,12 +313,10 @@ def update_selected_submissions(request: Request, user_sub: UserSubmissionUpdate
 def update_team_name(request: Request, user_team: UserTeamNameUpdate):
     if USE_OAUTH == 1:
         if request.session.get("oauth_info") is not None:
-            user_token = request.session.get("oauth_info")["access_token"]
-
-    user_token = user_team.user_token
+            user_team.user_token = request.session.get("oauth_info")["access_token"]
 
     try:
-        utils.update_team_name(user_token, user_team.new_team_name, COMPETITION_ID, HF_TOKEN)
+        utils.update_team_name(user_team.user_token, user_team.new_team_name, COMPETITION_ID, HF_TOKEN)
         return {"success": True, "error": ""}
     except Exception as e:
         return {"success": False, "error": str(e)}
