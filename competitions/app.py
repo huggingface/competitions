@@ -29,7 +29,7 @@ COMPETITION_ID = os.environ.get("COMPETITION_ID")
 OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/tmp/model")
 START_DATE = os.environ.get("START_DATE", "2000-12-31")
 DISABLE_PUBLIC_LB = int(os.environ.get("DISABLE_PUBLIC_LB", 0))
-USE_OAUTH = int(os.environ.get("USE_OAUTH", 0))
+USE_OAUTH = int(os.environ.get("USE_OAUTH", 1))
 VERSION_COMMIT_ID = os.environ.get("VERSION_COMMIT_ID", "0687567")
 
 disable_progress_bars()
