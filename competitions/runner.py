@@ -26,11 +26,12 @@ _DOCKERFILE = _DOCKERFILE.replace("\n", " ").replace("  ", "\n").strip()
 
 @dataclass
 class JobRunner:
-    competition_info: CompetitionInfo
+    competition_id: str
     token: str
     output_path: str
 
     def __post_init__(self):
+        self.competition_info = CompetitionInfo(competition_id=self.competition_id, autotrain_token=self.token)
         self.competition_id = self.competition_info.competition_id
         self.competition_type = self.competition_info.competition_type
         self.metric = self.competition_info.metric
