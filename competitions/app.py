@@ -11,6 +11,7 @@ from huggingface_hub import hf_hub_download
 from huggingface_hub.utils import disable_progress_bars
 from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
+from pydantic import BaseModel
 
 from competitions import utils
 from competitions.errors import AuthenticationError
@@ -46,6 +47,18 @@ if REQUIREMENTS_FNAME:
     logger.info("Uninstalling and installing requirements")
     utils.uninstall_requirements(REQUIREMENTS_FNAME)
     utils.install_requirements(REQUIREMENTS_FNAME)
+
+
+class LeaderboardRequest(BaseModel):
+    lb: str
+
+
+class UpdateSelectedSubmissionsRequest(BaseModel):
+    submission_ids: str
+
+
+class UpdateTeamNameRequest(BaseModel):
+    new_team_name: str
 
 
 def run_job_runner():
@@ -151,7 +164,9 @@ async def get_submission_info(request: Request):
 
 
 @app.post("/leaderboard", response_class=JSONResponse)
-async def fetch_leaderboard(request: Request, lb: str):
+async def fetch_leaderboard(request: Request, body: LeaderboardRequest):
+    lb = body.lb
+
     if request.session.get("oauth_info") is not None:
         user_token = request.session.get("oauth_info").get("access_token")
 
@@ -281,7 +296,9 @@ async def new_submission(
 
 
 @app.post("/update_selected_submissions", response_class=JSONResponse)
-def update_selected_submissions(request: Request, submission_ids: str):
+def update_selected_submissions(request: Request, body: UpdateSelectedSubmissionsRequest):
+    submission_ids = body.submission_ids
+
     if request.session.get("oauth_info") is not None:
         user_token = request.session.get("oauth_info")["access_token"]
     else:
@@ -308,7 +325,9 @@ def update_selected_submissions(request: Request, submission_ids: str):
 
 
 @app.post("/update_team_name", response_class=JSONResponse)
-def update_team_name(request: Request, new_team_name: str):
+def update_team_name(request: Request, body: UpdateTeamNameRequest):
+    new_team_name = body.new_team_name
+
     if request.session.get("oauth_info") is not None:
         user_token = request.session.get("oauth_info")["access_token"]
     else:
