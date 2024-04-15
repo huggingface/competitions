@@ -16,6 +16,7 @@ from competitions import utils
 from competitions.errors import AuthenticationError
 from competitions.info import CompetitionInfo
 from competitions.leaderboard import Leaderboard
+from competitions.oauth import attach_oauth
 from competitions.runner import JobRunner
 from competitions.submissions import Submissions
 from competitions.text import SUBMISSION_SELECTION_TEXT, SUBMISSION_TEXT
@@ -61,7 +62,7 @@ thread.start()
 
 
 app = FastAPI()
-# attach_oauth(app)
+attach_oauth(app)
 
 static_path = os.path.join(BASE_DIR, "static")
 app.mount("/static", StaticFiles(directory=static_path), name="static")
