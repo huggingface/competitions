@@ -178,9 +178,10 @@ async def fetch_leaderboard(request: Request, user_lb: UserLB):
         if request.session.get("oauth_info") is not None:
             user_lb.user_token = request.session.get("oauth_info")["access_token"]
 
-    is_user_allowed = utils.is_user_admin(user_lb.user_token, COMPETITION_ID)
+    is_user_admin = utils.is_user_admin(user_lb.user_token, COMPETITION_ID)
+    logger.info(f"User is admin: {is_user_admin}")
 
-    if DISABLE_PUBLIC_LB == 1 and user_lb.lb == "public" and not is_user_allowed:
+    if DISABLE_PUBLIC_LB == 1 and user_lb.lb == "public" and not is_user_admin:
         return {"response": "Public leaderboard is disabled by the competition host."}
 
     leaderboard = Leaderboard(
@@ -193,7 +194,7 @@ async def fetch_leaderboard(request: Request, user_lb: UserLB):
     )
     if user_lb.lb == "private":
         current_utc_time = datetime.datetime.now()
-        if current_utc_time < COMP_INFO.end_date and not is_user_allowed:
+        if current_utc_time < COMP_INFO.end_date and not is_user_admin:
             return {"response": "Private leaderboard will be available after the competition ends."}
     df = leaderboard.fetch(private=user_lb.lb == "private")
 
