@@ -34,9 +34,6 @@ VERSION_COMMIT_ID = os.environ.get("VERSION_COMMIT_ID", "0687567")
 
 disable_progress_bars()
 
-COMP_INFO = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
-RULES_AVAILABLE = COMP_INFO.rules is not None
-
 try:
     REQUIREMENTS_FNAME = hf_hub_download(
         repo_id=COMPETITION_ID,
@@ -73,7 +70,8 @@ class UserSubmissionUpdate(BaseModel):
 
 
 def run_job_runner():
-    job_runner = JobRunner(token=HF_TOKEN, competition_info=COMP_INFO, output_path=OUTPUT_PATH)
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+    job_runner = JobRunner(token=HF_TOKEN, competition_info=competition_info, output_path=OUTPUT_PATH)
     job_runner.run()
 
 
@@ -100,12 +98,13 @@ async def read_form(request: Request):
     """
     if HF_TOKEN is None:
         return templates.TemplateResponse("error.html", {"request": request})
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     context = {
         "request": request,
-        "logo": COMP_INFO.logo_url,
-        "competition_type": COMP_INFO.competition_type,
+        "logo": competition_info.logo_url,
+        "competition_type": competition_info.competition_type,
         "version_commit_id": VERSION_COMMIT_ID[:7],
-        "rules_available": RULES_AVAILABLE,
+        "rules_available": competition_info.rules is not None,
     }
     return templates.TemplateResponse("index.html", context)
 
@@ -119,10 +118,11 @@ async def oauth_login(request: Request):
 async def oauth_logout(request: Request):
     """Endpoint that logs out the user (e.g. delete cookie session)."""
     request.session.pop("oauth_info", None)
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     context = {
         "request": request,
-        "logo": COMP_INFO.logo_url,
-        "competition_type": COMP_INFO.competition_type,
+        "logo": competition_info.logo_url,
+        "competition_type": competition_info.competition_type,
     }
 
     return templates.TemplateResponse("index.html", context)
@@ -143,7 +143,8 @@ async def use_oauth(request: Request):
 
 @app.get("/competition_info", response_class=JSONResponse)
 async def get_comp_info(request: Request):
-    info = COMP_INFO.competition_desc
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+    info = competition_info.competition_desc
     # info = markdown.markdown(info)
     resp = {"response": info}
     return resp
@@ -151,7 +152,8 @@ async def get_comp_info(request: Request):
 
 @app.get("/dataset_info", response_class=JSONResponse)
 async def get_dataset_info(request: Request):
-    info = COMP_INFO.dataset_desc
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+    info = competition_info.dataset_desc
     # info = markdown.markdown(info)
     resp = {"response": info}
     return resp
@@ -159,14 +161,16 @@ async def get_dataset_info(request: Request):
 
 @app.get("/rules", response_class=JSONResponse)
 async def get_rules(request: Request):
-    if COMP_INFO.rules is not None:
-        return {"response": COMP_INFO.rules}
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+    if competition_info.rules is not None:
+        return {"response": competition_info.rules}
     return {"response": "No rules available."}
 
 
 @app.get("/submission_info", response_class=JSONResponse)
 async def get_submission_info(request: Request):
-    info = COMP_INFO.submission_desc
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+    info = competition_info.submission_desc
     # info = markdown.markdown(info)
     resp = {"response": info}
     return resp
@@ -178,23 +182,24 @@ async def fetch_leaderboard(request: Request, user_lb: UserLB):
         if request.session.get("oauth_info") is not None:
             user_lb.user_token = request.session.get("oauth_info")["access_token"]
 
-    is_user_admin = utils.is_user_admin(user_lb.user_token, COMPETITION_ID)
-    logger.info(f"User is admin: {is_user_admin}")
+    comp_org = COMPETITION_ID.split("/")[0]
+    is_user_admin = utils.is_user_admin(user_lb.user_token, comp_org)
 
     if DISABLE_PUBLIC_LB == 1 and user_lb.lb == "public" and not is_user_admin:
         return {"response": "Public leaderboard is disabled by the competition host."}
 
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     leaderboard = Leaderboard(
-        end_date=COMP_INFO.end_date,
-        eval_higher_is_better=COMP_INFO.eval_higher_is_better,
-        max_selected_submissions=COMP_INFO.selection_limit,
+        end_date=competition_info.end_date,
+        eval_higher_is_better=competition_info.eval_higher_is_better,
+        max_selected_submissions=competition_info.selection_limit,
         competition_id=COMPETITION_ID,
         token=HF_TOKEN,
-        scoring_metric=COMP_INFO.scoring_metric,
+        scoring_metric=competition_info.scoring_metric,
     )
     if user_lb.lb == "private":
         current_utc_time = datetime.datetime.now()
-        if current_utc_time < COMP_INFO.end_date and not is_user_admin:
+        if current_utc_time < competition_info.end_date and not is_user_admin:
             return {"response": "Private leaderboard will be available after the competition ends."}
     df = leaderboard.fetch(private=user_lb.lb == "private")
 
@@ -209,14 +214,14 @@ async def my_submissions(request: Request, user: User):
     if USE_OAUTH == 1:
         if request.session.get("oauth_info") is not None:
             user.user_token = request.session.get("oauth_info")["access_token"]
-
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     sub = Submissions(
-        end_date=COMP_INFO.end_date,
-        submission_limit=COMP_INFO.submission_limit,
+        end_date=competition_info.end_date,
+        submission_limit=competition_info.submission_limit,
         competition_id=COMPETITION_ID,
         token=HF_TOKEN,
-        competition_type=COMP_INFO.competition_type,
-        hardware=COMP_INFO.hardware,
+        competition_type=competition_info.competition_type,
+        hardware=competition_info.hardware,
     )
     try:
         subs = sub.my_submissions(user.user_token)
@@ -224,7 +229,7 @@ async def my_submissions(request: Request, user: User):
         return {
             "response": {
                 "submissions": "",
-                "submission_text": SUBMISSION_TEXT.format(COMP_INFO.submission_limit),
+                "submission_text": SUBMISSION_TEXT.format(competition_info.submission_limit),
                 "error": "**Invalid token**",
                 "team_name": "",
             }
@@ -235,8 +240,8 @@ async def my_submissions(request: Request, user: User):
     if len(subs) == 0:
         error = "**You have not made any submissions yet.**"
         subs = ""
-    submission_text = SUBMISSION_TEXT.format(COMP_INFO.submission_limit)
-    submission_selection_text = SUBMISSION_SELECTION_TEXT.format(COMP_INFO.selection_limit)
+    submission_text = SUBMISSION_TEXT.format(competition_info.submission_limit)
+    submission_selection_text = SUBMISSION_SELECTION_TEXT.format(competition_info.selection_limit)
 
     team_name = utils.get_team_name(user.user_token, COMPETITION_ID, HF_TOKEN)
 
@@ -276,19 +281,20 @@ async def new_submission(
         if not utils.is_user_admin(token, comp_org):
             return {"response": "Competition has not started yet!"}
 
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     sub = Submissions(
-        end_date=COMP_INFO.end_date,
-        submission_limit=COMP_INFO.submission_limit,
+        end_date=competition_info.end_date,
+        submission_limit=competition_info.submission_limit,
         competition_id=COMPETITION_ID,
         token=HF_TOKEN,
-        competition_type=COMP_INFO.competition_type,
-        hardware=COMP_INFO.hardware,
+        competition_type=competition_info.competition_type,
+        hardware=competition_info.hardware,
     )
     try:
-        if COMP_INFO.competition_type == "generic":
+        if competition_info.competition_type == "generic":
             resp = sub.new_submission(token, submission_file, submission_comment)
             return {"response": f"Success! You have {resp} submissions remaining today."}
-        if COMP_INFO.competition_type == "script":
+        if competition_info.competition_type == "script":
             resp = sub.new_submission(token, hub_model, submission_comment)
             return {"response": f"Success! You have {resp} submissions remaining today."}
     except AuthenticationError:
@@ -302,20 +308,21 @@ def update_selected_submissions(request: Request, user_sub: UserSubmissionUpdate
         if request.session.get("oauth_info") is not None:
             user_sub.user_token = request.session.get("oauth_info")["access_token"]
 
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     sub = Submissions(
-        end_date=COMP_INFO.end_date,
-        submission_limit=COMP_INFO.submission_limit,
+        end_date=competition_info.end_date,
+        submission_limit=competition_info.submission_limit,
         competition_id=COMPETITION_ID,
         token=HF_TOKEN,
-        competition_type=COMP_INFO.competition_type,
-        hardware=COMP_INFO.hardware,
+        competition_type=competition_info.competition_type,
+        hardware=competition_info.hardware,
     )
     submission_ids = user_sub.submission_ids.split(",")
     submission_ids = [s.strip() for s in submission_ids]
-    if len(submission_ids) > COMP_INFO.selection_limit:
+    if len(submission_ids) > competition_info.selection_limit:
         return {
             "success": False,
-            "error": f"Please select at most {COMP_INFO.selection_limit} submissions.",
+            "error": f"Please select at most {competition_info.selection_limit} submissions.",
         }
     sub.update_selected_submissions(user_token=user_sub.user_token, selected_submission_ids=submission_ids)
     return {"success": True, "error": ""}
