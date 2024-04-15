@@ -70,10 +70,8 @@
                 const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
                 articleLoadingSpinner.classList.remove('hidden');
 
-                const userToken = document.getElementById('user_token').value;
                 const payload = {
                     lb: leaderboardType,
-                    user_token: userToken
                 };
 
                 fetch('/leaderboard', {
@@ -109,7 +107,6 @@
             }
 
             function fetchAndDisplaySubmissions() {
-                const userToken = document.getElementById('user_token').value;
                 const apiEndpoint = '/my_submissions';
                 const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
                 articleLoadingSpinner.classList.remove('hidden');
@@ -118,8 +115,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ "user_token": userToken })
+                    }
                 };
 
                 fetch(apiEndpoint, requestOptions)
@@ -160,10 +156,10 @@
                             // add a text field which displays team name and a button to update team name
                             contentDiv.innerHTML = marked.parse(data.response.submission_text) + tableHTML;
                             document.getElementById('updateSelectedSubmissionsButton').addEventListener('click', function () {
-                                updateSelectedSubmissions(userToken);
+                                updateSelectedSubmissions();
                             });
                             document.getElementById('updateTeamNameButton').addEventListener('click', function () {
-                                updateTeamName(userToken);
+                                updateTeamName();
                             });
                         } else {
                             // Display message if there are no submissions
@@ -201,7 +197,6 @@
 
             function fetchAndDisplayTeamInfo() {
                 const apiEndpoint = '/team_info';
-                const userToken = document.getElementById('user_token').value;
                 const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
                 articleLoadingSpinner.classList.remove('hidden');
 
@@ -209,8 +204,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ "user_token": userToken })
+                    }
                 };
                 fetch(apiEndpoint, requestOptions)
                     .then(response => {
@@ -332,20 +326,17 @@
         }
 
         function checkOAuth() {
-            var url = "/use_oauth";
+            var url = "/login_status";
             makeApiRequest(url, function (response) {
                 if (response === 1) {
-                    document.getElementById("userToken").style.display = "none";
                     document.getElementById("loginButton").style.display = "block";
                     document.getElementById("logoutButton").style.display = "none";
                 } else if (response === 2) {
-                    document.getElementById("userToken").style.display = "none";
                     document.getElementById("loginButton").style.display = "none";
                     document.getElementById("logoutButton").style.display = "block";
                 }
             });
         }
-
         window.onload = checkOAuth;
     </script>
 </head>
@@ -462,13 +453,6 @@
                                 submission</a>
                         </li>
                     </ul>
-                </li>
-                <li id="userToken">
-                    <label for="user_token" class="text-xs font-medium">Hugging Face <a
-                            href="https://huggingface.co/settings/tokens" target="_blank">Token</a> (read-only)
-                    </label>
-                    <input type="password" name="user_token" id="user_token"
-                        class="mt-1 block w-full border border-gray-300 px-3 py-1.5 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                 </li>
                 <li id="loginButton" style="display: none;">
                     <a href="/login/huggingface" target="_blank"
@@ -589,9 +573,6 @@
                 return;
             }
 
-            var token = document.getElementById('user_token').value;
-            formData.append('token', token);
-
             var submissionComment = document.getElementById('submission_comment').value;
             formData.append('submission_comment', submissionComment);
 
@@ -615,7 +596,7 @@
 </script>
 
 <script>
-    function updateSelectedSubmissions(userToken) {
+    function updateSelectedSubmissions() {
         const selectedSubmissions = document.querySelectorAll('input[name="selectedSubmissions"]:checked');
         const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
         articleLoadingSpinner.classList.remove('hidden');
@@ -631,7 +612,6 @@
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                "user_token": userToken,
                 "submission_ids": selectedSubmissionIds.join(',')
             })
         };
@@ -664,7 +644,7 @@
 </script>
 
 <script>
-    function updateTeamName(userToken) {
+    function updateTeamName() {
         const teamName = document.getElementById('team_name').value;
         const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
         articleLoadingSpinner.classList.remove('hidden');
@@ -676,7 +656,6 @@
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                "user_token": userToken,
                 "new_team_name": teamName
             })
         };

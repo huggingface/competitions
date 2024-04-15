@@ -4,20 +4,18 @@ import threading
 
 import requests
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from huggingface_hub import hf_hub_download
 from huggingface_hub.utils import disable_progress_bars
 from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
-from pydantic import BaseModel
 
 from competitions import utils
 from competitions.errors import AuthenticationError
 from competitions.info import CompetitionInfo
 from competitions.leaderboard import Leaderboard
-from competitions.oauth import attach_oauth
 from competitions.runner import JobRunner
 from competitions.submissions import Submissions
 from competitions.text import SUBMISSION_SELECTION_TEXT, SUBMISSION_TEXT
@@ -29,7 +27,6 @@ COMPETITION_ID = os.environ.get("COMPETITION_ID")
 OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/tmp/model")
 START_DATE = os.environ.get("START_DATE", "2000-12-31")
 DISABLE_PUBLIC_LB = int(os.environ.get("DISABLE_PUBLIC_LB", 0))
-USE_OAUTH = int(os.environ.get("USE_OAUTH", 1))
 VERSION_COMMIT_ID = os.environ.get("VERSION_COMMIT_ID", "0687567")
 
 disable_progress_bars()
@@ -50,28 +47,12 @@ if REQUIREMENTS_FNAME:
     utils.install_requirements(REQUIREMENTS_FNAME)
 
 
-class UserTeamNameUpdate(BaseModel):
-    user_token: str
-    new_team_name: str
-
-
-class User(BaseModel):
-    user_token: str
-
-
-class UserLB(BaseModel):
-    user_token: str
-    lb: str
-
-
-class UserSubmissionUpdate(BaseModel):
-    user_token: str
-    submission_ids: str
-
-
 def run_job_runner():
-    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
-    job_runner = JobRunner(token=HF_TOKEN, competition_info=competition_info, output_path=OUTPUT_PATH)
+    job_runner = JobRunner(
+        competition_id=COMPETITION_ID,
+        token=HF_TOKEN,
+        output_path=OUTPUT_PATH,
+    )
     job_runner.run()
 
 
@@ -80,8 +61,7 @@ thread.start()
 
 
 app = FastAPI()
-if USE_OAUTH == 1:
-    attach_oauth(app)
+# attach_oauth(app)
 
 static_path = os.path.join(BASE_DIR, "static")
 app.mount("/static", StaticFiles(directory=static_path), name="static")
@@ -109,13 +89,20 @@ async def read_form(request: Request):
     return templates.TemplateResponse("index.html", context)
 
 
-@app.get("/oauth_login", response_class=HTMLResponse)
-async def oauth_login(request: Request):
-    return RedirectResponse("/login/huggingface")
+@app.get("/login_status", response_class=JSONResponse)
+async def use_oauth(request: Request):
+    if request.session.get("oauth_info") is not None:
+        try:
+            utils.user_authentication(request.session.get("oauth_info")["access_token"])
+            return {"response": 2}
+        except requests.exceptions.JSONDecodeError:
+            request.session.pop("oauth_info", None)
+            return {"response": 1}
+    return {"response": 1}
 
 
 @app.get("/logout", response_class=HTMLResponse)
-async def oauth_logout(request: Request):
+async def user_logout(request: Request):
     """Endpoint that logs out the user (e.g. delete cookie session)."""
     request.session.pop("oauth_info", None)
     competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
@@ -123,29 +110,17 @@ async def oauth_logout(request: Request):
         "request": request,
         "logo": competition_info.logo_url,
         "competition_type": competition_info.competition_type,
+        "version_commit_id": VERSION_COMMIT_ID[:7],
+        "rules_available": competition_info.rules is not None,
     }
 
     return templates.TemplateResponse("index.html", context)
-
-
-@app.get("/use_oauth", response_class=JSONResponse)
-async def use_oauth(request: Request):
-    if USE_OAUTH == 1:
-        if request.session.get("oauth_info") is not None:
-            try:
-                utils.user_authentication(request.session.get("oauth_info")["access_token"])
-                return {"response": 2}
-            except requests.exceptions.JSONDecodeError:
-                request.session.pop("oauth_info", None)
-                return {"response": USE_OAUTH}
-    return {"response": USE_OAUTH}
 
 
 @app.get("/competition_info", response_class=JSONResponse)
 async def get_comp_info(request: Request):
     competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     info = competition_info.competition_desc
-    # info = markdown.markdown(info)
     resp = {"response": info}
     return resp
 
@@ -154,7 +129,6 @@ async def get_comp_info(request: Request):
 async def get_dataset_info(request: Request):
     competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     info = competition_info.dataset_desc
-    # info = markdown.markdown(info)
     resp = {"response": info}
     return resp
 
@@ -171,21 +145,22 @@ async def get_rules(request: Request):
 async def get_submission_info(request: Request):
     competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     info = competition_info.submission_desc
-    # info = markdown.markdown(info)
     resp = {"response": info}
     return resp
 
 
 @app.post("/leaderboard", response_class=JSONResponse)
-async def fetch_leaderboard(request: Request, user_lb: UserLB):
-    if USE_OAUTH == 1:
-        if request.session.get("oauth_info") is not None:
-            user_lb.user_token = request.session.get("oauth_info")["access_token"]
+async def fetch_leaderboard(request: Request, lb: str):
+    if request.session.get("oauth_info") is not None:
+        user_token = request.session.get("oauth_info").get("access_token")
 
     comp_org = COMPETITION_ID.split("/")[0]
-    is_user_admin = utils.is_user_admin(user_lb.user_token, comp_org)
+    if user_token is not None:
+        is_user_admin = utils.is_user_admin(user_token, comp_org)
+    else:
+        is_user_admin = False
 
-    if DISABLE_PUBLIC_LB == 1 and user_lb.lb == "public" and not is_user_admin:
+    if DISABLE_PUBLIC_LB == 1 and lb == "public" and not is_user_admin:
         return {"response": "Public leaderboard is disabled by the competition host."}
 
     competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
@@ -197,11 +172,11 @@ async def fetch_leaderboard(request: Request, user_lb: UserLB):
         token=HF_TOKEN,
         scoring_metric=competition_info.scoring_metric,
     )
-    if user_lb.lb == "private":
+    if lb == "private":
         current_utc_time = datetime.datetime.now()
         if current_utc_time < competition_info.end_date and not is_user_admin:
             return {"response": "Private leaderboard will be available after the competition ends."}
-    df = leaderboard.fetch(private=user_lb.lb == "private")
+    df = leaderboard.fetch(private=lb == "private")
 
     if len(df) == 0:
         return {"response": "No teams yet. Why not make a submission?"}
@@ -210,10 +185,12 @@ async def fetch_leaderboard(request: Request, user_lb: UserLB):
 
 
 @app.post("/my_submissions", response_class=JSONResponse)
-async def my_submissions(request: Request, user: User):
-    if USE_OAUTH == 1:
-        if request.session.get("oauth_info") is not None:
-            user.user_token = request.session.get("oauth_info")["access_token"]
+async def my_submissions(request: Request):
+    if request.session.get("oauth_info") is not None:
+        user_token = request.session.get("oauth_info")["access_token"]
+    else:
+        user_token = "abc"
+
     competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     sub = Submissions(
         end_date=competition_info.end_date,
@@ -224,13 +201,13 @@ async def my_submissions(request: Request, user: User):
         hardware=competition_info.hardware,
     )
     try:
-        subs = sub.my_submissions(user.user_token)
+        subs = sub.my_submissions(user_token)
     except AuthenticationError:
         return {
             "response": {
                 "submissions": "",
                 "submission_text": SUBMISSION_TEXT.format(competition_info.submission_limit),
-                "error": "**Invalid token**",
+                "error": "**Invalid token. Please login.**",
                 "team_name": "",
             }
         }
@@ -243,7 +220,7 @@ async def my_submissions(request: Request, user: User):
     submission_text = SUBMISSION_TEXT.format(competition_info.submission_limit)
     submission_selection_text = SUBMISSION_SELECTION_TEXT.format(competition_info.selection_limit)
 
-    team_name = utils.get_team_name(user.user_token, COMPETITION_ID, HF_TOKEN)
+    team_name = utils.get_team_name(user_token, COMPETITION_ID, HF_TOKEN)
 
     resp = {
         "response": {
@@ -261,15 +238,15 @@ async def new_submission(
     request: Request,
     submission_file: UploadFile = File(None),
     hub_model: str = Form(...),
-    token: str = Form(None),
     submission_comment: str = Form(None),
 ):
     if submission_comment is None:
         submission_comment = ""
 
-    if USE_OAUTH == 1:
-        if request.session.get("oauth_info") is not None:
-            token = request.session.get("oauth_info")["access_token"]
+    if request.session.get("oauth_info") is not None:
+        token = request.session.get("oauth_info")["access_token"]
+    else:
+        token = None
 
     if token is None:
         return {"response": "Invalid token"}
@@ -303,10 +280,11 @@ async def new_submission(
 
 
 @app.post("/update_selected_submissions", response_class=JSONResponse)
-def update_selected_submissions(request: Request, user_sub: UserSubmissionUpdate):
-    if USE_OAUTH == 1:
-        if request.session.get("oauth_info") is not None:
-            user_sub.user_token = request.session.get("oauth_info")["access_token"]
+def update_selected_submissions(request: Request, submission_ids: str):
+    if request.session.get("oauth_info") is not None:
+        user_token = request.session.get("oauth_info")["access_token"]
+    else:
+        return {"success": False, "error": "Invalid token"}
 
     competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
     sub = Submissions(
@@ -317,25 +295,29 @@ def update_selected_submissions(request: Request, user_sub: UserSubmissionUpdate
         competition_type=competition_info.competition_type,
         hardware=competition_info.hardware,
     )
-    submission_ids = user_sub.submission_ids.split(",")
+    submission_ids = submission_ids.split(",")
     submission_ids = [s.strip() for s in submission_ids]
     if len(submission_ids) > competition_info.selection_limit:
         return {
             "success": False,
             "error": f"Please select at most {competition_info.selection_limit} submissions.",
         }
-    sub.update_selected_submissions(user_token=user_sub.user_token, selected_submission_ids=submission_ids)
+    sub.update_selected_submissions(user_token=user_token, selected_submission_ids=submission_ids)
     return {"success": True, "error": ""}
 
 
 @app.post("/update_team_name", response_class=JSONResponse)
-def update_team_name(request: Request, user_team: UserTeamNameUpdate):
-    if USE_OAUTH == 1:
-        if request.session.get("oauth_info") is not None:
-            user_team.user_token = request.session.get("oauth_info")["access_token"]
+def update_team_name(request: Request, new_team_name: str):
+    if request.session.get("oauth_info") is not None:
+        user_token = request.session.get("oauth_info")["access_token"]
+    else:
+        return {"success": False, "error": "Invalid token"}
+
+    if str(new_team_name).strip() == "":
+        return {"success": False, "error": "Team name cannot be empty."}
 
     try:
-        utils.update_team_name(user_team.user_token, user_team.new_team_name, COMPETITION_ID, HF_TOKEN)
+        utils.update_team_name(user_token, new_team_name, COMPETITION_ID, HF_TOKEN)
         return {"success": True, "error": ""}
     except Exception as e:
         return {"success": False, "error": str(e)}

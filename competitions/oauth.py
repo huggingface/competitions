@@ -25,10 +25,7 @@ RANDOM_STRING = "".join(random.choices(string.ascii_letters + string.digits, k=2
 
 
 def attach_oauth(app: fastapi.FastAPI):
-    if os.environ.get("SPACE_ID") is not None and int(os.environ.get("USE_OAUTH", 0)) == 1:
-        _add_oauth_routes(app)
-    else:
-        return
+    _add_oauth_routes(app)
     # Session Middleware requires a secret key to sign the cookies. Let's use a hash
     # of the OAuth secret key to make it unique to the Space + updated in case OAuth
     # config gets updated.
@@ -86,8 +83,21 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
         try:
             oauth_info = await oauth.huggingface.authorize_access_token(request)  # type: ignore
         except MismatchingStateError:
-            print("Session dict:", dict(request.session))
-            raise
+            # If the state mismatch, it is very likely that the cookie is corrupted.
+            # There is a bug reported in authlib that causes the token to grow indefinitely if the user tries to login
+            # repeatedly. Since cookies cannot get bigger than 4kb, the token will be truncated at some point - hence
+            # losing the state. A workaround is to delete the cookie and redirect the user to the login page again.
+            # See https://github.com/lepture/authlib/issues/622 for more details.
+            login_uri = "/login/huggingface"
+            if "_target_url" in request.query_params:
+                login_uri += "?" + urllib.parse.urlencode(  # Keep same _target_url as before
+                    {"_target_url": request.query_params["_target_url"]}
+                )
+            for key in list(request.session.keys()):
+                # Delete all keys that are related to the OAuth state
+                if key.startswith("_state_huggingface"):
+                    request.session.pop(key)
+            return RedirectResponse(login_uri)
         request.session["oauth_info"] = oauth_info
         return _redirect_to_target(request)
 
