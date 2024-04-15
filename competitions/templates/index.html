@@ -72,10 +72,8 @@
 
                 const userToken = document.getElementById('user_token').value;
                 const payload = {
-                    user_lb: {
-                        lb: leaderboardType,
-                        user_token: userToken
-                    }
+                    lb: leaderboardType,
+                    user_token: userToken
                 };
 
                 fetch('/leaderboard', {
