@@ -66,19 +66,32 @@
                         articleLoadingSpinner.classList.add('hidden');
                     });
             }
-
-            function fetchAndDisplayPublicLeaderboard() {
+            function fetchAndDisplayLeaderboard(leaderboardType) {
                 const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
                 articleLoadingSpinner.classList.remove('hidden');
-                fetch('/leaderboard/public')
+
+                const userToken = document.getElementById('user_token').value;
+                const payload = {
+                    user_lb: {
+                        lb: leaderboardType,
+                        user_token: userToken
+                    }
+                };
+
+                fetch('/leaderboard', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Network response was not ok');
                         }
-                        return response.json(); // Parse the JSON response
+                        return response.json();
                     })
                     .then(data => {
-                        // Populate the 'content' div with the HTML from the response
                         const contentDiv = document.getElementById('content');
                         contentDiv.innerHTML = marked.parse(data.response);
                         articleLoadingSpinner.classList.add('hidden');
@@ -87,29 +100,16 @@
                         console.error('There has been a problem with your fetch operation:', error);
                         articleLoadingSpinner.classList.add('hidden');
                     });
+            }
+
+            function fetchAndDisplayPublicLeaderboard() {
+                fetchAndDisplayLeaderboard('public');
             }
 
             function fetchAndDisplayPrivateLeaderboard() {
-                const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
-                articleLoadingSpinner.classList.remove('hidden');
-                fetch('/leaderboard/private')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json(); // Parse the JSON response
-                    })
-                    .then(data => {
-                        // Populate the 'content' div with the HTML from the response
-                        const contentDiv = document.getElementById('content');
-                        contentDiv.innerHTML = marked.parse(data.response);
-                        articleLoadingSpinner.classList.add('hidden');
-                    })
-                    .catch(error => {
-                        console.error('There has been a problem with your fetch operation:', error);
-                        articleLoadingSpinner.classList.add('hidden');
-                    });
+                fetchAndDisplayLeaderboard('private');
             }
+
             function fetchAndDisplaySubmissions() {
                 const userToken = document.getElementById('user_token').value;
                 const apiEndpoint = '/my_submissions';

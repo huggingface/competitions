@@ -224,7 +224,7 @@ def install_requirements(requirements_fname):
     return
 
 
-def can_user_submit_before_start(user_token, competition_organization):
+def is_user_admin(user_token, competition_organization):
     user_info = user_authentication(token=user_token)
     user_orgs = user_info.get("orgs", [])
     for org in user_orgs:
