@@ -169,6 +169,8 @@ async def fetch_leaderboard(request: Request, body: LeaderboardRequest):
 
     if request.session.get("oauth_info") is not None:
         user_token = request.session.get("oauth_info").get("access_token")
+    else:
+        user_token = None
 
     comp_org = COMPETITION_ID.split("/")[0]
     if user_token is not None:
