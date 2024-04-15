@@ -178,7 +178,7 @@ async def fetch_leaderboard(request: Request, user_lb: UserLB):
         if request.session.get("oauth_info") is not None:
             user_lb.user_token = request.session.get("oauth_info")["access_token"]
 
-    is_user_allowed = utils.can_user_see_private_lb(user_lb.user_token, COMPETITION_ID)
+    is_user_allowed = utils.is_user_admin(user_lb.user_token, COMPETITION_ID)
 
     if DISABLE_PUBLIC_LB == 1 and user_lb.lb == "public" and not is_user_allowed:
         return {"response": "Public leaderboard is disabled by the competition host."}
@@ -272,7 +272,7 @@ async def new_submission(
     start_date = datetime.datetime.strptime(START_DATE, "%Y-%m-%d")
     if todays_date < start_date:
         comp_org = COMPETITION_ID.split("/")[0]
-        if not utils.can_user_submit_before_start(token, comp_org):
+        if not utils.is_user_admin(token, comp_org):
             return {"response": "Competition has not started yet!"}
 
     sub = Submissions(
