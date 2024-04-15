@@ -62,6 +62,11 @@ class User(BaseModel):
     user_token: str
 
 
+class UserLB(BaseModel):
+    user_token: str
+    lb: str
+
+
 class UserSubmissionUpdate(BaseModel):
     user_token: str
     submission_ids: str
@@ -167,9 +172,15 @@ async def get_submission_info(request: Request):
     return resp
 
 
-@app.get("/leaderboard/{lb}", response_class=JSONResponse)
-async def get_leaderboard(request: Request, lb: str):
-    if DISABLE_PUBLIC_LB == 1 and lb == "public":
+@app.post("/leaderboard", response_class=JSONResponse)
+async def fetch_leaderboard(request: Request, user_lb: UserLB):
+    if USE_OAUTH == 1:
+        if request.session.get("oauth_info") is not None:
+            user_lb.user_token = request.session.get("oauth_info")["access_token"]
+
+    is_user_allowed = utils.can_user_see_private_lb(user_lb.user_token, COMPETITION_ID)
+
+    if DISABLE_PUBLIC_LB == 1 and user_lb.lb == "public" and not is_user_allowed:
         return {"response": "Public leaderboard is disabled by the competition host."}
 
     leaderboard = Leaderboard(
@@ -180,12 +191,12 @@ async def get_leaderboard(request: Request, lb: str):
         token=HF_TOKEN,
         scoring_metric=COMP_INFO.scoring_metric,
     )
-    if lb == "private":
-        current_utc_time = datetime.datetime.utcnow()
-        if current_utc_time < COMP_INFO.end_date:
+    if user_lb.lb == "private":
+        current_utc_time = datetime.datetime.now()
+        if current_utc_time < COMP_INFO.end_date and not is_user_allowed:
             return {"response": "Private leaderboard will be available after the competition ends."}
-    df = leaderboard.fetch(private=lb == "private")
-    logger.info(df)
+    df = leaderboard.fetch(private=user_lb.lb == "private")
+
     if len(df) == 0:
         return {"response": "No teams yet. Why not make a submission?"}
     resp = {"response": df.to_markdown(index=False)}
