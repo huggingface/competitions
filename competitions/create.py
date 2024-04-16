@@ -4,7 +4,6 @@ import json
 import gradio as gr
 from huggingface_hub import HfApi
 from loguru import logger
-from sklearn.metrics import get_scorer_names
 
 from competitions.utils import user_authentication
 
@@ -12,6 +11,7 @@ from competitions.utils import user_authentication
 COMPETITION_DESC = """Sample competition description"""
 DATASET_DESC = """Sample dataset description"""
 SUBMISSION_DESC = """Sample submission description"""
+RULES = """Sample rules"""
 SOLUTION_CSV = """
 id,pred,split
 0,1,public
@@ -66,7 +66,18 @@ HARDWARE_CHOICES = [
     "a10g-largex4",
     "a100-large",
 ]
-METRIC_CHOICES = get_scorer_names() + ["custom"]
+METRIC_CHOICES = [
+    "accuracy_score",
+    "f1_score",
+    "hamming_loss",
+    "jaccard_score",
+    "log_loss",
+    "roc_auc_score",
+    "mean_squared_error",
+    "mean_absolute_error",
+    "r2_score",
+    "custom",
+]
 
 
 def check_if_user_can_create_competition(user_token):
@@ -75,7 +86,7 @@ def check_if_user_can_create_competition(user_token):
     :param user_token: the user's token
     :return: True if the user can create a competition, False otherwise
     """
-    user_info = user_authentication(user_token)
+    user_info = user_authentication(user_token, return_raw=True)
     return_msg = None
     if "error" in user_info:
         return_msg = "Invalid token. You can find your HF token here: https://huggingface.co/settings/tokens"
@@ -118,7 +129,8 @@ def _create_readme(competition_name):
     _readme += "colorTo: indigo\n"
     _readme += "sdk: docker\n"
     _readme += "pinned: false\n"
-    _readme += "duplicated_from: autotrain-projects/autotrain-advanced\n"
+    _readme += "tags:\n"
+    _readme += "  - competition\n"
     _readme += "hf_oauth: true\n"
     _readme += "hf_oauth_scopes:\n"
     _readme += "  - read-repos\n"
@@ -240,6 +252,14 @@ def _create(
     api.upload_file(
         path_or_fileobj=solution_csv,
         path_in_repo="solution.csv",
+        repo_id=f"{organization}/{competition_name}",
+        repo_type="dataset",
+    )
+
+    rules = io.BytesIO(RULES.encode())
+    api.upload_file(
+        path_or_fileobj=rules,
+        path_in_repo="RULES.md",
         repo_id=f"{organization}/{competition_name}",
         repo_type="dataset",
     )

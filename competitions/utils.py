@@ -15,7 +15,7 @@ from competitions.params import EvalParams
 from . import HF_URL
 
 
-def user_authentication(token):
+def user_authentication(token, return_raw=False):
     if token.startswith("hf_oauth"):
         _api_url = HF_URL + "/oauth/userinfo"
     else:
@@ -36,7 +36,11 @@ def user_authentication(token):
     except (requests.Timeout, ConnectionError) as err:
         logger.error(f"Failed to request whoami-v2 - {repr(err)}")
         raise Exception("Hugging Face Hub is unreachable, please try again later.")
+
     resp = response.json()
+    if return_raw:
+        return resp
+
     user_info = {}
     if "error" in resp:
         return resp
