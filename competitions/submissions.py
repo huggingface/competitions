@@ -34,7 +34,7 @@ class Submissions:
         return todays_submissions
 
     def _is_submission_allowed(self, team_id):
-        todays_date = datetime.utcnow()
+        todays_date = datetime.now()
         if todays_date > self.end_date:
             raise PastDeadlineError("Competition has ended.")
 
@@ -70,7 +70,7 @@ class Submissions:
         )
         with open(team_fname, "r", encoding="utf-8") as f:
             team_submission_info = json.load(f)
-        datetime_now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        datetime_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # here goes all the default stuff for submission
         team_submission_info["submissions"].append(
@@ -88,7 +88,7 @@ class Submissions:
             }
         )
         # count the number of times user has submitted today
-        todays_date = datetime.utcnow().strftime("%Y-%m-%d")
+        todays_date = datetime.now().strftime("%Y-%m-%d")
         todays_submissions = self._num_subs_today(todays_date, team_submission_info)
         self._upload_team_submissions(team_id, team_submission_info)
         return todays_submissions
@@ -117,7 +117,7 @@ class Submissions:
         return team_submission_info
 
     def update_selected_submissions(self, user_token, selected_submission_ids):
-        current_datetime = datetime.utcnow()
+        current_datetime = datetime.now()
         if current_datetime > self.end_date:
             raise PastDeadlineError("Competition has ended.")
 
@@ -167,7 +167,7 @@ class Submissions:
 
     def my_submissions(self, user_token):
         user_info = self._get_user_info(user_token)
-        current_date_time = datetime.utcnow()
+        current_date_time = datetime.now()
         private = False
         if current_date_time >= self.end_date:
             private = True

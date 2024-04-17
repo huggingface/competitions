@@ -40,6 +40,9 @@ def generate_submission_file(params):
     # push the submission.csv file to the repo using upload_submission_file
     logger.info("Generating submission file")
 
+    # invalidate USER_TOKEN env var
+    os.environ["USER_TOKEN"] = ""
+
     # Copy socket-kit.so to submission_dir
     shutil.copyfile("socket-kit.so", f"{submission_dir}/socket-kit.so")
 
