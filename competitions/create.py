@@ -91,7 +91,7 @@ def check_if_user_can_create_competition(user_token):
     if "error" in user_info:
         return_msg = "Invalid token. You can find your HF token here: https://huggingface.co/settings/tokens"
 
-    elif user_info["auth"]["accessToken"]["role"] != "write":
+    elif user_info["auth"]["accessToken"]["role"] not in ("write", "fineGrained"):
         return_msg = "Please provide a token with write access"
 
     if return_msg is not None:
