@@ -98,6 +98,7 @@ def check_if_user_can_create_competition(user_token):
         return gr.Dropdown()
 
     orgs = user_info["orgs"]
+    valid_orgs = [org for org in orgs if "canPay" in org]
     valid_orgs = [org for org in orgs if org["canPay"] is True]
 
     if len(valid_orgs) == 0:
