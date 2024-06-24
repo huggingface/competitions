@@ -9,7 +9,7 @@ from huggingface_hub import HfApi, hf_hub_download
 
 from competitions.enums import SubmissionStatus
 from competitions.errors import AuthenticationError, PastDeadlineError, SubmissionError, SubmissionLimitError
-from competitions.utils import user_authentication
+from competitions.utils import token_information
 
 
 @dataclass
@@ -157,7 +157,7 @@ class Submissions:
         return submissions_df
 
     def _get_user_info(self, user_token):
-        user_info = user_authentication(token=user_token)
+        user_info = token_information(token=user_token)
         if "error" in user_info:
             raise AuthenticationError("Invalid token")
 
