@@ -43,7 +43,7 @@ def token_information(token):
 
     if response.status_code != 200:
         logger.error(f"Failed to request whoami-v2 - {response.status_code}")
-        raise Exception("Invalid token. Please login with a write token.")
+        raise Exception("Invalid token.")
 
     resp = response.json()
     user_info = {}
