@@ -68,8 +68,14 @@ def run_job_runner():
     job_runner.run()
 
 
-thread = threading.Thread(target=run_job_runner)
-thread.start()
+def start_job_runner_thread():
+    thread = threading.Thread(target=run_job_runner)
+    thread.daemon = True
+    thread.start()
+    return thread
+
+
+_ = start_job_runner_thread()
 
 
 app = FastAPI()
@@ -197,10 +203,16 @@ async def fetch_leaderboard(
 
 @app.post("/my_submissions", response_class=JSONResponse)
 async def my_submissions(request: Request, user_token: str = Depends(utils.user_authentication)):
-    if user_token is None:
-        user_token = "abc"
-
     competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+    if user_token is None:
+        return {
+            "response": {
+                "submissions": "",
+                "submission_text": SUBMISSION_TEXT.format(competition_info.submission_limit),
+                "error": "**Invalid token. Please login.**",
+                "team_name": "",
+            }
+        }
     sub = Submissions(
         end_date=competition_info.end_date,
         submission_limit=competition_info.submission_limit,
