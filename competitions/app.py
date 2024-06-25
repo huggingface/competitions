@@ -70,7 +70,7 @@ def run_job_runner():
 
 def start_job_runner_thread():
     thread = threading.Thread(target=run_job_runner)
-    thread.daemon = True
+    # thread.daemon = True
     thread.start()
     return thread
 
