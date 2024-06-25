@@ -12,7 +12,7 @@ from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
 from pydantic import BaseModel
 
-from competitions import utils
+from competitions import __version__, utils
 from competitions.errors import AuthenticationError
 from competitions.info import CompetitionInfo
 from competitions.leaderboard import Leaderboard
@@ -28,7 +28,6 @@ COMPETITION_ID = os.environ.get("COMPETITION_ID")
 OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/tmp/model")
 START_DATE = os.environ.get("START_DATE", "2000-12-31")
 DISABLE_PUBLIC_LB = int(os.environ.get("DISABLE_PUBLIC_LB", 0))
-VERSION_COMMIT_ID = os.environ.get("VERSION_COMMIT_ID", "0687567")
 
 disable_progress_bars()
 
@@ -96,7 +95,7 @@ async def read_form(request: Request):
         "request": request,
         "logo": competition_info.logo_url,
         "competition_type": competition_info.competition_type,
-        "version_commit_id": VERSION_COMMIT_ID[:7],
+        "version": __version__,
         "rules_available": competition_info.rules is not None,
     }
     return templates.TemplateResponse("index.html", context)
@@ -121,7 +120,7 @@ async def user_logout(request: Request):
         "request": request,
         "logo": competition_info.logo_url,
         "competition_type": competition_info.competition_type,
-        "version_commit_id": VERSION_COMMIT_ID[:7],
+        "__version__": __version__,
         "rules_available": competition_info.rules is not None,
     }
 
