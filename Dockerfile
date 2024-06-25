@@ -6,7 +6,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 ENV PATH="${HOME}/miniconda3/bin:${PATH}"
 ARG PATH="${HOME}/miniconda3/bin:${PATH}"
-ARG VERSION_COMMIT_ID
 
 RUN mkdir -p /tmp/model && \
     chown -R 1000:1000 /tmp/model && \
@@ -67,12 +66,9 @@ SHELL ["conda", "run","--no-capture-output", "-p","/app/env", "/bin/bash", "-c"]
 RUN conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia && \
     conda clean -ya && \
     conda install -c "nvidia/label/cuda-12.1.0" cuda-nvcc && conda clean -ya
-# conda install -c "nvidia/label/cuda-12.1.0" cuda-toolkit && conda clean -ya
 
 COPY --chown=1000:1000 . /app/
 RUN make socket-kit.so
-
-RUN pip install git+https://github.com/facebookresearch/pytorch3d.git@stable
 
 ENV PATH="/app:${PATH}"
 

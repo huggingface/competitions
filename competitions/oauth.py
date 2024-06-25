@@ -6,8 +6,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import random
-import string
 import urllib.parse
 
 import fastapi
@@ -21,15 +19,16 @@ OAUTH_CLIENT_ID = os.environ.get("OAUTH_CLIENT_ID")
 OAUTH_CLIENT_SECRET = os.environ.get("OAUTH_CLIENT_SECRET")
 OAUTH_SCOPES = os.environ.get("OAUTH_SCOPES")
 OPENID_PROVIDER_URL = os.environ.get("OPENID_PROVIDER_URL")
-RANDOM_STRING = "".join(random.choices(string.ascii_letters + string.digits, k=20))
 
 
 def attach_oauth(app: fastapi.FastAPI):
+    if os.environ.get("USER_TOKEN") is not None:
+        return
     _add_oauth_routes(app)
     # Session Middleware requires a secret key to sign the cookies. Let's use a hash
     # of the OAuth secret key to make it unique to the Space + updated in case OAuth
     # config gets updated.
-    session_secret = OAUTH_CLIENT_SECRET + RANDOM_STRING
+    session_secret = OAUTH_CLIENT_SECRET + "-competitions-v1"
     # ^ if we change the session cookie format in the future, we can bump the version of the session secret to make
     #   sure cookies are invalidated. Otherwise some users with an old cookie format might get a HTTP 500 error.
     app.add_middleware(
@@ -79,7 +78,6 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
     @app.get("/auth")
     async def auth(request: fastapi.Request) -> RedirectResponse:
         """Endpoint that handles the OAuth callback."""
-        # oauth_info = await oauth.huggingface.authorize_access_token(request)  # type: ignore
         try:
             oauth_info = await oauth.huggingface.authorize_access_token(request)  # type: ignore
         except MismatchingStateError:
@@ -98,6 +96,7 @@ def _add_oauth_routes(app: fastapi.FastAPI) -> None:
                 if key.startswith("_state_huggingface"):
                     request.session.pop(key)
             return RedirectResponse(login_uri)
+
         request.session["oauth_info"] = oauth_info
         return _redirect_to_target(request)
 
@@ -119,6 +118,5 @@ def _generate_redirect_uri(request: fastapi.Request) -> str:
 
 
 def _redirect_to_target(request: fastapi.Request, default_target: str = "/") -> RedirectResponse:
-    # target = request.query_params.get("_target_url", default_target)
-    target = "https://huggingface.co/spaces/" + os.environ.get("SPACE_ID")
+    target = request.query_params.get("_target_url", default_target)
     return RedirectResponse(target)

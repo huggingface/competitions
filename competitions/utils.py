@@ -6,6 +6,7 @@ import subprocess
 import traceback
 
 import requests
+from fastapi import Request
 from huggingface_hub import HfApi, hf_hub_download
 from loguru import logger
 
@@ -15,7 +16,71 @@ from competitions.params import EvalParams
 from . import HF_URL
 
 
-def user_authentication(token, return_raw=False):
+USER_TOKEN = os.environ.get("USER_TOKEN")
+
+
+def token_information(token):
+    if token.startswith("hf_oauth"):
+        _api_url = HF_URL + "/oauth/userinfo"
+    else:
+        _api_url = HF_URL + "/api/whoami-v2"
+    headers = {}
+    cookies = {}
+    if token.startswith("hf_"):
+        headers["Authorization"] = f"Bearer {token}"
+    else:
+        cookies = {"token": token}
+    try:
+        response = requests.get(
+            _api_url,
+            headers=headers,
+            cookies=cookies,
+            timeout=3,
+        )
+    except (requests.Timeout, ConnectionError) as err:
+        logger.error(f"Failed to request whoami-v2 - {repr(err)}")
+        raise Exception("Hugging Face Hub is unreachable, please try again later.")
+
+    if response.status_code != 200:
+        logger.error(f"Failed to request whoami-v2 - {response.status_code}")
+        raise Exception("Invalid token.")
+
+    resp = response.json()
+    user_info = {}
+
+    if token.startswith("hf_oauth"):
+        user_info["id"] = resp["sub"]
+        user_info["name"] = resp["preferred_username"]
+        user_info["orgs"] = [resp["orgs"][k]["preferred_username"] for k in range(len(resp["orgs"]))]
+    else:
+        user_info["id"] = resp["id"]
+        user_info["name"] = resp["name"]
+        user_info["orgs"] = [resp["orgs"][k]["name"] for k in range(len(resp["orgs"]))]
+    return user_info
+
+
+def user_authentication(request: Request):
+    if USER_TOKEN is not None:
+        try:
+            _ = token_information(token=USER_TOKEN)
+            return USER_TOKEN
+        except Exception as e:
+            logger.error(f"Failed to verify token: {e}")
+            return None
+
+    if "oauth_info" in request.session:
+        try:
+            _ = token_information(token=request.session["oauth_info"]["access_token"])
+            return request.session["oauth_info"]["access_token"]
+        except Exception as e:
+            request.session.pop("oauth_info", None)
+            logger.error(f"Failed to verify token: {e}")
+            return None
+
+    return None
+
+
+def user_authentication_dep(token, return_raw=False):
     if token.startswith("hf_oauth"):
         _api_url = HF_URL + "/oauth/userinfo"
     else:
@@ -229,7 +294,7 @@ def install_requirements(requirements_fname):
 
 
 def is_user_admin(user_token, competition_organization):
-    user_info = user_authentication(token=user_token)
+    user_info = token_information(token=user_token)
     user_orgs = user_info.get("orgs", [])
     for org in user_orgs:
         if org == competition_organization:
@@ -238,7 +303,7 @@ def is_user_admin(user_token, competition_organization):
 
 
 def get_team_name(user_token, competition_id, hf_token):
-    user_info = user_authentication(token=user_token)
+    user_info = token_information(token=user_token)
     user_id = user_info["id"]
     user_team = hf_hub_download(
         repo_id=competition_id,
@@ -268,7 +333,7 @@ def get_team_name(user_token, competition_id, hf_token):
 
 
 def update_team_name(user_token, new_team_name, competition_id, hf_token):
-    user_info = user_authentication(token=user_token)
+    user_info = token_information(token=user_token)
     user_id = user_info["id"]
     user_team = hf_hub_download(
         repo_id=competition_id,

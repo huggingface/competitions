@@ -5,7 +5,7 @@ import gradio as gr
 from huggingface_hub import HfApi
 from loguru import logger
 
-from competitions.utils import user_authentication
+from competitions.utils import token_information
 
 
 COMPETITION_DESC = """Sample competition description"""
@@ -86,7 +86,7 @@ def check_if_user_can_create_competition(user_token):
     :param user_token: the user's token
     :return: True if the user can create a competition, False otherwise
     """
-    user_info = user_authentication(user_token, return_raw=True)
+    user_info = token_information(user_token, return_raw=True)
     return_msg = None
     if "error" in user_info:
         return_msg = "Invalid token. You can find your HF token here: https://huggingface.co/settings/tokens"
