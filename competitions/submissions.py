@@ -309,6 +309,9 @@ class Submissions:
             #     repo_type="model",
             # )
             # create barebones submission runner space
+            user_api = HfApi(token=user_token)
+            # submission_id is the sha of the submitted model repo
+            submission_id = user_api.model_info(repo_id=uploaded_file).sha
             competition_organizer = self.competition_id.split("/")[0]
             space_id = f"{competition_organizer}/comp-{submission_id}"
             api = HfApi(token=self.token)

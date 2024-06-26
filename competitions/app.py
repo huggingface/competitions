@@ -1,6 +1,7 @@
 import datetime
 import os
 import threading
+import time
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -75,7 +76,18 @@ def start_job_runner_thread():
     return thread
 
 
-_ = start_job_runner_thread()
+def watchdog(job_runner_thread):
+    while True:
+        if not job_runner_thread.is_alive():
+            logger.warning("Job runner thread stopped. Restarting...")
+            job_runner_thread = start_job_runner_thread()
+        time.sleep(10)
+
+
+job_runner_thread = start_job_runner_thread()
+watchdog_thread = threading.Thread(target=watchdog, args=(job_runner_thread,))
+watchdog_thread.daemon = True
+watchdog_thread.start()
 
 
 app = FastAPI()
@@ -192,7 +204,7 @@ async def fetch_leaderboard(
     if lb == "private":
         current_utc_time = datetime.datetime.now()
         if current_utc_time < competition_info.end_date and not is_user_admin:
-            return {"response": "Private leaderboard will be available after the competition ends."}
+            return {"response": f"Private leaderboard will be available on {competition_info.end_date} UTC."}
     df = leaderboard.fetch(private=lb == "private")
 
     if len(df) == 0:
