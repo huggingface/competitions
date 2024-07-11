@@ -60,6 +60,20 @@ def token_information(token):
 
 
 def user_authentication(request: Request):
+    auth_header = request.headers.get("Authorization")
+    bearer_token = None
+
+    if auth_header and auth_header.startswith("Bearer "):
+        bearer_token = auth_header.split(" ")[1]
+
+    if bearer_token:
+        try:
+            _ = token_information(token=bearer_token)
+            return bearer_token
+        except Exception as e:
+            logger.error(f"Failed to verify token: {e}")
+            return None
+
     if USER_TOKEN is not None:
         try:
             _ = token_information(token=USER_TOKEN)

@@ -1,0 +1,17 @@
+# machine learning libs
+scikit-learn==1.5.1
+jiwer==3.0.4
+sacremoses==0.1.1
+sentencepiece==0.2.0
+xgboost==2.1.0
+nltk==3.8.1
+optuna==3.6.1
+einops==0.8.0
+peft==0.11.1
+trl==0.9.6
+tiktoken==0.7.0
+transformers==4.42.3
+accelerate==0.32.1
+diffusers==0.29.2
+bitsandbytes==0.43.1
+tqdm==4.66.4

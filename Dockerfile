@@ -73,3 +73,4 @@ RUN make socket-kit.so
 ENV PATH="/app:${PATH}"
 
 RUN pip install -e .
+RUN pip install -r requirements_docker.txt
