@@ -31,7 +31,7 @@ class SubmitCompetitionAppCommand(BaseCompetitionsCommand):
         if os.path.isfile(self.args.submission):
             files = {"submission_file": open(self.args.submission, "rb")}
             data = {
-                "hub_model": "",
+                "hub_model": "None",
                 "submission_comment": self.args.comment,
             }
         else:
