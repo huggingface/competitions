@@ -353,3 +353,86 @@ def update_team_name(
         return {"success": True, "error": ""}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+@app.post("/admin/comp_info", response_class=JSONResponse)
+async def admin_comp_info(request: Request, user_token: str = Depends(utils.user_authentication)):
+    comp_org = COMPETITION_ID.split("/")[0]
+    user_is_admin = utils.is_user_admin(user_token, comp_org)
+    if not user_is_admin:
+        return {"response": "You are not an admin."}, 403
+
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+
+    markdowns = {
+        "competition_desc": competition_info.competition_desc,
+        "rules": competition_info.rules,
+        "submission_desc": competition_info.submission_desc,
+        "dataset_desc": competition_info.dataset_desc,
+    }
+    if markdowns["rules"] is None:
+        markdowns["rules"] = "No rules available."
+
+    config = {
+        "SUBMISSION_LIMIT": competition_info.submission_limit,
+        "SELECTION_LIMIT": competition_info.selection_limit,
+        "END_DATE": competition_info.end_date.strftime("%Y-%m-%d"),
+        "EVAL_HIGHER_IS_BETTER": competition_info.eval_higher_is_better,
+        "SUBMISSION_COLUMNS": competition_info.submission_columns_raw,
+        "SUBMISSION_ID_COLUMN": competition_info.submission_id_col,
+        "LOGO": competition_info.logo_url,
+        "COMPETITION_TYPE": competition_info.competition_type,
+        "EVAL_METRIC": competition_info.metric,
+        "SUBMISSION_ROWS": competition_info.submission_rows,
+        "TIME_LIMIT": competition_info.time_limit,
+        "DATASET": competition_info.dataset,
+        "SUBMISSION_FILENAMES": competition_info.submission_filenames,
+        "SCORING_METRIC": competition_info.scoring_metric,
+        "HARDWARE": competition_info.hardware,
+    }
+
+    return {"response": {"config": config, "markdowns": markdowns}}
+
+
+@app.post("/admin/update_comp_info", response_class=JSONResponse)
+async def update_comp_info(request: Request, user_token: str = Depends(utils.user_authentication)):
+    comp_org = COMPETITION_ID.split("/")[0]
+    user_is_admin = utils.is_user_admin(user_token, comp_org)
+    if not user_is_admin:
+        return {"response": "You are not an admin."}, 403
+
+    competition_info = CompetitionInfo(competition_id=COMPETITION_ID, autotrain_token=HF_TOKEN)
+
+    data = await request.json()
+    config = data["config"]
+    markdowns = data["markdowns"]
+
+    valid_keys = [
+        "SUBMISSION_LIMIT",
+        "SELECTION_LIMIT",
+        "END_DATE",
+        "EVAL_HIGHER_IS_BETTER",
+        "SUBMISSION_COLUMNS",
+        "SUBMISSION_ID_COLUMN",
+        "LOGO",
+        "COMPETITION_TYPE",
+        "EVAL_METRIC",
+        "SUBMISSION_ROWS",
+        "TIME_LIMIT",
+        "DATASET",
+        "SUBMISSION_FILENAMES",
+        "SCORING_METRIC",
+        "HARDWARE",
+    ]
+
+    for key in config:
+        if key not in valid_keys:
+            return {"success": False, "error": f"Invalid key: {key}"}
+
+    try:
+        competition_info.update_competition_info(config, markdowns, HF_TOKEN)
+    except Exception as e:
+        logger.error(e)
+        return {"success": False}, 500
+
+    return {"success": True}

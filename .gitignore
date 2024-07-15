@@ -4,6 +4,7 @@
 .vim/
 flagged/
 *.csv
+*.json
 *.db
 install.txt
 uninstall.txt

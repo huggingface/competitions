@@ -22,6 +22,17 @@
                 modal.classList.add('hidden');
             }
 
+            function addTargetBlankToLinks() {
+                const content = document.getElementById('content');
+                const links = content.getElementsByTagName('a');
+
+                for (let i = 0; i < links.length; i++) {
+                    if (!links[i].hasAttribute('target')) {
+                        links[i].setAttribute('target', '_blank');
+                    }
+                }
+            }
+
             function fetchAndDisplayCompetitionInfo() {
                 const articleLoadingSpinner = document.getElementById('articleLoadingSpinner');
                 articleLoadingSpinner.classList.remove('hidden');
@@ -37,6 +48,7 @@
                         const contentDiv = document.getElementById('content');
                         contentDiv.style.display = 'block';
                         contentDiv.innerHTML = marked.parse(data.response);
+                        addTargetBlankToLinks();
                         articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
@@ -59,6 +71,7 @@
                         // Populate the 'content' div with the HTML from the response
                         const contentDiv = document.getElementById('content');
                         contentDiv.innerHTML = marked.parse(data.response);
+                        addTargetBlankToLinks();
                         articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
@@ -187,6 +200,7 @@
                         // Populate the 'content' div with the HTML from the response
                         const contentDiv = document.getElementById('content');
                         contentDiv.innerHTML = marked.parse(data.response);
+                        addTargetBlankToLinks();
                         articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
@@ -246,6 +260,7 @@
                         // Populate the 'content' div with the HTML from the response
                         const contentDiv = document.getElementById('content');
                         contentDiv.innerHTML = marked.parse(data.response);
+                        addTargetBlankToLinks();
                         articleLoadingSpinner.classList.add('hidden');
                     })
                     .catch(error => {
@@ -378,9 +393,9 @@
                         class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
                         <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
                             aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
-                            viewBox="0 0 18 18">
+                            viewBox="0 0 24 24">
                             <path
-                                d="M6.143 0H1.857A1.857 1.857 0 0 0 0 1.857v4.286C0 7.169.831 8 1.857 8h4.286A1.857 1.857 0 0 0 8 6.143V1.857A1.857 1.857 0 0 0 6.143 0Zm10 0h-4.286A1.857 1.857 0 0 0 10 1.857v4.286C10 7.169 10.831 8 11.857 8h4.286A1.857 1.857 0 0 0 18 6.143V1.857A1.857 1.857 0 0 0 16.143 0Zm-10 10H1.857A1.857 1.857 0 0 0 0 11.857v4.286C0 17.169.831 18 1.857 18h4.286A1.857 1.857 0 0 0 8 16.143v-4.286A1.857 1.857 0 0 0 6.143 10Zm10 0h-4.286A1.857 1.857 0 0 0 10 11.857v4.286c0 1.026.831 1.857 1.857 1.857h4.286A1.857 1.857 0 0 0 18 16.143v-4.286A1.857 1.857 0 0 0 16.143 10Z" />
+                                d="M3 0h18v2H3V0zm0 4h18v2H3V4zm0 4h18v2H3V8zm0 4h18v2H3v-2zm0 4h18v2H3v-2zm0 4h18v2H3v-2z" />
                         </svg>
                         <span class="flex-1 ms-3 whitespace-nowrap">Rules</span>
                     </a>
@@ -453,6 +468,18 @@
                                 submission</a>
                         </li>
                     </ul>
+                </li>
+                <li>
+                    <a href="#" id="admin"
+                        class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
+                            aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                            viewBox="0 0 24 24">
+                            <path
+                                d="M12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5zm7.43-3.5c.04-.33.07-.66.07-1s-.03-.67-.07-1l2.11-1.65c.19-.15.23-.42.12-.63l-2-3.46c-.11-.21-.35-.3-.57-.24l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.57 2.18 14.3 2 14 2h-4c-.3 0-.57.18-.64.45L8.98 5.1c-.61.25-1.17.58-1.69.98l-2.49-1c-.22-.06-.46.03-.57.24l-2 3.46c-.11.21-.07.48.12.63l2.11 1.65c-.04.33-.07.66-.07 1s.03.67.07 1L2.46 14.1c-.19.15-.23.42-.12.63l2 3.46c.11.21.35.3.57.24l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.07.27.34.45.64.45h4c.3 0 .57-.18.64-.45l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1c.22.06.46-.03.57-.24l2-3.46c.11-.21.07-.48-.12-.63l-2.11-1.65zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                        </svg>
+                        <span class="flex-1 ms-3 whitespace-nowrap">Admin</span>
+                    </a>
                 </li>
                 <li id="loginButton" style="display: none;">
                     <a href="/login/huggingface"
@@ -544,8 +571,218 @@
             <div id="success-message" style="color: green;"></div>
         </div>
     </div>
+    <div id="admin-modal" tabindex="-1"
+        class="hidden fixed inset-0 z-40 flex items-center justify-center w-full h-full bg-black bg-opacity-50">
+        <div id="adminLoadingSpinner" role="status"
+            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+            <span class="sr-only">Loading...</span>
+        </div>
+        <div class="relative w-full max-w-5xl p-4">
+            <div class="relative bg-white rounded-lg shadow-2xl">
+                <button type="button"
+                    class="absolute top-3 right-3 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"
+                    data-modal-hide="admin-modal">
+                    <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                    </svg>
+                    <span class="sr-only">Close</span>
+                </button>
+                <div class="p-6 md:p-8 text-center">
+                    <h3 class="mb-5 text-lg font-medium text-gray-900">Admin</h3>
+                    <div class="tabs">
+                        <ul class="flex border-b">
+                            <li class="mr-1">
+                                <a class="tab bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold"
+                                    href="#config">Config</a>
+                            </li>
+                            <li class="mr-1">
+                                <a class="tab bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold"
+                                    href="#competition-desc">Competition Desc</a>
+                            </li>
+                            <li class="mr-1">
+                                <a class="tab bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold"
+                                    href="#dataset-desc">Dataset Desc</a>
+                            </li>
+                            <li class="mr-1">
+                                <a class="tab bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold"
+                                    href="#submission-desc">Submission Desc</a>
+                            </li>
+                            <li class="mr-1">
+                                <a class="tab bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold"
+                                    href="#rules-desc">Rules</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div id="tab-contents"
+                        class="text-xs font-normal text-left overflow-y-auto max-h-[calc(100vh-400px)] border-t border-gray-200 pt-4">
+                        <div id="config">
+                            <textarea id="config-textarea" class="w-full h-64 p-2 border rounded">Loading..</textarea>
+                            <p class="text-xs text-gray-500">Note: The config should be a valid JSON object. To learn
+                                details about entries, click <a
+                                    href="https://huggingface.co/docs/competitions/competition_repo#confjson"
+                                    target="_blank">here</a>.
+                            </p>
+                        </div>
+                        <div id="competition-desc" class="hidden">
+                            <textarea id="competition-desc-textarea"
+                                class="w-full h-64 p-2 border rounded">Loading..</textarea>
+                        </div>
+                        <div id="dataset-desc" class="hidden">
+                            <textarea id="dataset-desc-textarea"
+                                class="w-full h-64 p-2 border rounded">Loading..</textarea>
+                        </div>
+                        <div id="submission-desc" class="hidden">
+                            <textarea id="submission-desc-textarea"
+                                class="w-full h-64 p-2 border rounded">Loading..</textarea>
+                        </div>
+                        <div id="rules-desc" class="hidden">
+                            <textarea id="rules-desc-textarea"
+                                class="w-full h-64 p-2 border rounded">Loading..</textarea>
+                        </div>
+                    </div>
+                    <button id="save-button" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const content = document.getElementById('content');
+            const links = content.getElementsByTagName('a');
+
+            for (let i = 0; i < links.length; i++) {
+                if (!links[i].hasAttribute('target')) {
+                    links[i].setAttribute('target', '_blank');
+                }
+            }
+        });
+    </script>
 </body>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll('.tabs a').forEach(tab => {
+            tab.addEventListener('click', event => {
+                event.preventDefault();
+                document.querySelectorAll('.tabs a').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                document.querySelectorAll('#tab-contents > div').forEach(content => content.classList.add('hidden'));
+                const selectedTab = document.querySelector(tab.getAttribute('href'));
+                selectedTab.classList.remove('hidden');
+            });
+        });
+
+        async function fetchAdminCompInfo() {
+            const adminLoadingSpinner = document.getElementById('adminLoadingSpinner');
+            adminLoadingSpinner.classList.remove('hidden');
+            try {
+                const response = await fetch("/admin/comp_info", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    populateAdminModal(data.response);
+                } else {
+                    alert(data.response || "Failed to fetch competition info");
+                }
+            } catch (error) {
+                console.error("Error fetching admin competition info:", error);
+                alert("An error occurred while fetching competition info.");
+            } finally {
+                adminLoadingSpinner.classList.add('hidden');
+            }
+        }
+
+        function populateAdminModal(data) {
+            document.getElementById("config-textarea").value = JSON.stringify(data.config, null, 2);
+            document.getElementById("competition-desc-textarea").value = data.markdowns["competition_desc"] || "";
+            document.getElementById("dataset-desc-textarea").value = data.markdowns["dataset_desc"] || "";
+            document.getElementById("submission-desc-textarea").value = data.markdowns["submission_desc"] || "";
+            document.getElementById("rules-desc-textarea").value = data.markdowns["rules"] || "No rules available.";
+        }
+
+        document.querySelectorAll(".tab").forEach(tab => {
+            tab.addEventListener("click", function (event) {
+                event.preventDefault();
+                const targetId = this.getAttribute("href").substring(1);
+
+                document.querySelectorAll("#tab-contents > div").forEach(content => {
+                    content.classList.add("hidden");
+                });
+                document.getElementById(targetId).classList.remove("hidden");
+
+                document.querySelectorAll(".tab").forEach(t => {
+                    t.classList.remove("text-blue-800");
+                    t.classList.add("text-blue-500");
+                });
+                this.classList.remove("text-blue-500");
+                this.classList.add("text-blue-800");
+            });
+        });
+
+        document.getElementById("admin").addEventListener("click", function () {
+            document.getElementById("admin-modal").classList.remove("hidden");
+            fetchAdminCompInfo();
+        });
+
+        document.querySelector("[data-modal-hide='admin-modal']").addEventListener("click", function () {
+            document.getElementById("admin-modal").classList.add("hidden");
+        });
+
+        document.getElementById("save-button").addEventListener("click", async function () {
+            const adminLoadingSpinner = document.getElementById('adminLoadingSpinner');
+            adminLoadingSpinner.classList.remove('hidden');
+
+            const config = document.getElementById("config-textarea").value;
+            const competitionDesc = document.getElementById("competition-desc-textarea").value;
+            const datasetDesc = document.getElementById("dataset-desc-textarea").value;
+            const submissionDesc = document.getElementById("submission-desc-textarea").value;
+            const rulesDesc = document.getElementById("rules-desc-textarea").value;
+
+            const data = {
+                config: JSON.parse(config),
+                markdowns: {
+                    competition_desc: competitionDesc,
+                    dataset_desc: datasetDesc,
+                    submission_desc: submissionDesc,
+                    rules: rulesDesc
+                }
+            };
+
+            try {
+                const response = await fetch("/admin/update_comp_info", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.response || "Successfully updated competition info");
+                } else {
+                    alert(result.response || "Failed to update competition info");
+                }
+            } catch (error) {
+                console.error("Error updating competition info:", error);
+                alert("An error occurred while updating competition info.");
+            } finally {
+                adminLoadingSpinner.classList.add('hidden');
+            }
+        });
+
+    });
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -687,6 +924,28 @@
                 console.error('There was a problem with the fetch operation for updating:', error);
             });
     }
+</script>
+
+<script>
+    function showAdminModal() {
+        const modal = document.getElementById('admin-modal');
+        modal.classList.add('flex');
+        modal.classList.remove('hidden');
+    }
+
+    function hideAdminModal() {
+        const modal = document.getElementById('admin-modal');
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+
+    document.querySelector('#admin').addEventListener('click', function () {
+        showAdminModal();
+    });
+
+    document.querySelector('[data-modal-hide="admin-modal"]').addEventListener('click', function () {
+        hideAdminModal();
+    });
 </script>
 
 </html>

@@ -1,8 +1,9 @@
+import io
 import json
 from dataclasses import dataclass
 from datetime import datetime
 
-from huggingface_hub import hf_hub_download
+from huggingface_hub import HfApi, hf_hub_download
 
 
 @dataclass
@@ -97,6 +98,10 @@ class CompetitionInfo:
         return self.config["SUBMISSION_COLUMNS"].split(",")
 
     @property
+    def submission_columns_raw(self):
+        return self.config["SUBMISSION_COLUMNS"]
+
+    @property
     def submission_description(self):
         return self.submission_desc
 
@@ -159,3 +164,34 @@ class CompetitionInfo:
     @property
     def rules(self):
         return self.rules_md
+
+    def _save_md(self, md, filename, api):
+        md = io.BytesIO(md.encode())
+        api.upload_file(
+            path_or_fileobj=md,
+            path_in_repo=filename,
+            repo_id=self.competition_id,
+            repo_type="dataset",
+        )
+
+    def update_competition_info(self, config, markdowns, token):
+        api = HfApi(token=token)
+        conf_json = json.dumps(config, indent=4)
+        conf_json_bytes = conf_json.encode("utf-8")
+        conf_json_buffer = io.BytesIO(conf_json_bytes)
+        api.upload_file(
+            path_or_fileobj=conf_json_buffer,
+            path_in_repo="conf.json",
+            repo_id=self.competition_id,
+            repo_type="dataset",
+        )
+
+        competition_desc = markdowns["competition_desc"]
+        dataset_desc = markdowns["dataset_desc"]
+        submission_desc = markdowns["submission_desc"]
+        rules_md = markdowns["rules"]
+
+        self._save_md(competition_desc, "COMPETITION_DESC.md", api)
+        self._save_md(dataset_desc, "DATASET_DESC.md", api)
+        self._save_md(submission_desc, "SUBMISSION_DESC.md", api)
+        self._save_md(rules_md, "RULES.md", api)
