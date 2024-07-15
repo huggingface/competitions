@@ -97,9 +97,7 @@ def check_if_user_can_create_competition(user_token):
     if return_msg is not None:
         return gr.Dropdown()
 
-    orgs = user_info["orgs"]
-    valid_orgs = [org for org in orgs if "canPay" in org]
-    valid_orgs = [org for org in valid_orgs if org["canPay"] is True]
+    valid_orgs = user_info["orgs"]
 
     if len(valid_orgs) == 0:
         return_msg = """You are not a member of any organization with a valid payment method.
