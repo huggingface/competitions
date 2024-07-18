@@ -5,7 +5,7 @@ import gradio as gr
 from huggingface_hub import HfApi
 from loguru import logger
 
-from competitions.utils import user_authentication_create
+from competitions.utils import token_information
 
 
 COMPETITION_DESC = """Sample competition description"""
@@ -86,40 +86,15 @@ def check_if_user_can_create_competition(user_token):
     :param user_token: the user's token
     :return: True if the user can create a competition, False otherwise
     """
-    user_info = user_authentication_create(user_token, return_raw=True)
-    return_msg = None
-    if "error" in user_info:
-        return_msg = "Invalid token. You can find your HF token here: https://huggingface.co/settings/tokens"
-
-    elif user_info["auth"]["accessToken"]["role"] not in ("write", "fineGrained"):
-        return_msg = "Please provide a token with write access"
-
-    if return_msg is not None:
-        return gr.Dropdown()
-
+    user_info = token_information(user_token)
     valid_orgs = user_info["orgs"]
 
-    if len(valid_orgs) == 0:
-        return_msg = """You are not a member of any organization with a valid payment method.
-        Please add a valid payment method for your organization in order to create competitions."""
-        return gr.Dropdown()
-
-    valid_orgs = [org for org in valid_orgs if org["roleInOrg"] in ("admin", "write")]
-
-    if len(valid_orgs) == 0:
-        return_msg = """You dont have write access for any organization.
-        Please contact your organization's admin to add you as a member with write privilages."""
-        return gr.Dropdown()
-
-    valid_entities = {org["name"]: org["id"] for org in valid_orgs}
-
     return gr.Dropdown(
-        choices=list(valid_entities.keys()),
+        choices=valid_orgs,
         visible=True,
-        value=list(valid_entities.keys())[0],
+        value=valid_orgs[0],
     )
-
-
+a
 def _create_readme(competition_name):
     _readme = "---\n"
     _readme += f"title: {competition_name}\n"

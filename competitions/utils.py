@@ -94,7 +94,7 @@ def user_authentication(request: Request):
     return None
 
 
-def user_authentication_create(token, return_raw=False):
+def user_authentication_dep(token, return_raw=False):
     if token.startswith("hf_oauth"):
         _api_url = HF_URL + "/oauth/userinfo"
     else:
