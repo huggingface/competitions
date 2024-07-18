@@ -94,7 +94,8 @@ def check_if_user_can_create_competition(user_token):
         visible=True,
         value=valid_orgs[0],
     )
-a
+
+
 def _create_readme(competition_name):
     _readme = "---\n"
     _readme += f"title: {competition_name}\n"
