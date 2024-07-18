@@ -86,13 +86,12 @@ def check_if_user_can_create_competition(user_token):
     :param user_token: the user's token
     :return: True if the user can create a competition, False otherwise
     """
-    user_info = token_information(user_token, return_raw=True)
     return_msg = None
-    if "error" in user_info:
+    try:
+        user_info = token_information(user_token)
+    except Exception as e:
+        logger.error(e)
         return_msg = "Invalid token. You can find your HF token here: https://huggingface.co/settings/tokens"
-
-    elif user_info["auth"]["accessToken"]["role"] not in ("write", "fineGrained"):
-        return_msg = "Please provide a token with write access"
 
     if return_msg is not None:
         return gr.Dropdown()
