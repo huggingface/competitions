@@ -7,11 +7,11 @@ xgboost==2.1.0
 nltk==3.8.1
 optuna==3.6.1
 einops==0.8.0
-peft==0.11.1
+peft==0.12.0
 trl==0.9.6
 tiktoken==0.7.0
-transformers==4.42.3
-accelerate==0.32.1
-diffusers==0.29.2
-bitsandbytes==0.43.1
+transformers==4.44.1
+accelerate==0.33.0
+diffusers==0.30.0
+bitsandbytes==0.43.3
 tqdm==4.66.4
