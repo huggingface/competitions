@@ -191,5 +191,11 @@ class JobRunner:
                     submission_id = row["submission_id"]
                     submission_repo = row["submission_repo"]
                     space_id = row["space_id"]
-                    self.create_space(team_id, submission_id, submission_repo, space_id)
+                    try:
+                        self.create_space(team_id, submission_id, submission_repo, space_id)
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to create space for {team_id} {submission_id} {submission_repo} {space_id}: {e}"
+                        )
+                        continue
             time.sleep(5)
