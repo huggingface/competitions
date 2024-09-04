@@ -100,6 +100,33 @@ class JobRunner:
             repo_type="dataset",
         )
 
+    def mark_submission_failed(self, team_id, submission_id):
+        team_fname = hf_hub_download(
+            repo_id=self.competition_id,
+            filename=f"submission_info/{team_id}.json",
+            token=self.token,
+            repo_type="dataset",
+        )
+        with open(team_fname, "r", encoding="utf-8") as f:
+            team_submission_info = json.load(f)
+
+        for submission in team_submission_info["submissions"]:
+            if submission["submission_id"] == submission_id:
+                submission["status"] = SubmissionStatus.FAILED.value
+                break
+
+        team_submission_info_json = json.dumps(team_submission_info, indent=4)
+        team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
+        team_submission_info_json_buffer = io.BytesIO(team_submission_info_json_bytes)
+
+        api = HfApi(token=self.token)
+        api.upload_file(
+            path_or_fileobj=team_submission_info_json_buffer,
+            path_in_repo=f"submission_info/{team_id}.json",
+            repo_id=self.competition_id,
+            repo_type="dataset",
+        )
+
     def run_local(self, team_id, submission_id, submission_repo):
         self._queue_submission(team_id, submission_id)
         eval_params = {
@@ -197,5 +224,8 @@ class JobRunner:
                         logger.error(
                             f"Failed to create space for {team_id} {submission_id} {submission_repo} {space_id}: {e}"
                         )
+                        # mark submission as failed
+                        self.mark_submission_failed(team_id, submission_id)
+                        logger.error(f"Marked submission {submission_id} as failed.")
                         continue
             time.sleep(5)
