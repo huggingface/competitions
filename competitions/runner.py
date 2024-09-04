@@ -113,7 +113,6 @@ class JobRunner:
         for submission in team_submission_info["submissions"]:
             if submission["submission_id"] == submission_id:
                 submission["status"] = SubmissionStatus.FAILED.value
-                break
 
         team_submission_info_json = json.dumps(team_submission_info, indent=4)
         team_submission_info_json_bytes = team_submission_info_json.encode("utf-8")
