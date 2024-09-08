@@ -31,6 +31,7 @@ RUN apt-get update &&  \
     libgl1 \
     unzip \
     openjdk-11-jre-headless \
+    libseccomp-dev \
     && rm -rf /var/lib/apt/lists/* && \
     apt-get clean
 
@@ -68,7 +69,7 @@ RUN conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c
     conda install -c "nvidia/label/cuda-12.1.0" cuda-nvcc && conda clean -ya
 
 COPY --chown=1000:1000 . /app/
-RUN make socket-kit.so
+RUN make sandbox
 
 ENV PATH="/app:${PATH}"
 
