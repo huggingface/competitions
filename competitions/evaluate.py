@@ -60,9 +60,7 @@ def generate_submission_file(params):
     try:
         process.wait(timeout=params.time_limit)
     except subprocess.TimeoutExpired:
-        logger.info(
-            f"Process exceeded {params.time_limit} seconds time limit. Terminating..."
-        )
+        logger.info(f"Process exceeded {params.time_limit} seconds time limit. Terminating...")
         process.kill()
         process.wait()
 
@@ -122,9 +120,7 @@ def run(params):
 
     evaluation = compute_metrics(params)
 
-    utils.update_submission_score(
-        params, evaluation["public_score"], evaluation["private_score"]
-    )
+    utils.update_submission_score(params, evaluation["public_score"], evaluation["private_score"])
     utils.update_submission_status(params, SubmissionStatus.SUCCESS.value)
     utils.delete_space(params)
 
