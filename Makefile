@@ -1,4 +1,5 @@
-CFLAGS += -std=c99 -Wall
+CFLAGS += -std=c99 -Wall -O2
+LDFLAGS += -lseccomp
 .PHONY: quality style test
 
 quality:
@@ -18,11 +19,11 @@ docker:
 test:
 	pytest -sv .
 
-socket-kit.so: socket-kit.c
-	gcc $(CFLAGS) -shared -fPIC $^ -o $@ -ldl
+sandbox: sandbox.c
+	gcc $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
-	rm *.so
+	rm *.so sandbox
 
 pip:
 	rm -rf build/

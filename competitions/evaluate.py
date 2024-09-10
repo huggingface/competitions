@@ -43,18 +43,15 @@ def generate_submission_file(params):
     # invalidate USER_TOKEN env var
     os.environ["USER_TOKEN"] = ""
 
-    # Copy socket-kit.so to submission_dir
-    shutil.copyfile("socket-kit.so", f"{submission_dir}/socket-kit.so")
+    # Copy sandbox to submission_dir
+    shutil.copyfile("sandbox", f"{submission_dir}/sandbox")
 
     # Define your command
-    cmd = "python script.py"
-    socket_kit_path = os.path.abspath(f"{submission_dir}/socket-kit.so")
+    cmd = "./sandbox python script.py"
+    cmd = shlex.split(cmd)
 
     # Copy the current environment and modify it
     env = os.environ.copy()
-    env["LD_PRELOAD"] = socket_kit_path
-
-    cmd = shlex.split(cmd)
 
     # Start the subprocess
     process = subprocess.Popen(cmd, cwd=submission_dir, env=env)
