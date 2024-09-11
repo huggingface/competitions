@@ -71,6 +71,9 @@ RUN conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c
 COPY --chown=1000:1000 . /app/
 RUN make sandbox
 
+# give permissions to run sandbox
+RUN chmod +x /app/sandbox
+
 ENV PATH="/app:${PATH}"
 
 RUN pip install -U pip
