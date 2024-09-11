@@ -46,10 +46,10 @@ def generate_submission_file(params):
     # Copy sandbox to submission_dir
     shutil.copyfile("sandbox", f"{submission_dir}/sandbox")
     sandbox_path = f"{submission_dir}/sandbox"
-    os.chmod(sandbox_path, 0o755)
+    os.chown(sandbox_path, os.getuid(), os.getgid())
 
     # Define your command
-    cmd = "./sandbox python script.py"
+    cmd = f"{sandbox_path} python script.py"
     cmd = shlex.split(cmd)
 
     # Copy the current environment and modify it
