@@ -277,7 +277,7 @@ async def new_submission(
         submission_comment = ""
 
     if user_token is None:
-        return {"response": "Invalid token"}
+        return {"response": "**Invalid token. Please login.**"}
 
     todays_date = datetime.datetime.now()
     start_date = datetime.datetime.strptime(START_DATE, "%Y-%m-%d")
