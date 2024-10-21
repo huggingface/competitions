@@ -302,6 +302,8 @@ async def new_submission(
         if competition_info.competition_type == "script":
             resp = sub.new_submission(user_token, hub_model, submission_comment)
             return {"response": f"Success! You have {resp} submissions remaining today."}
+    except AuthenticationError:
+        return {"response": "Invalid token"}
     except PastDeadlineError:
         return {"response": "Competition has ended."}
     except SubmissionLimitError:
