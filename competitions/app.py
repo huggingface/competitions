@@ -277,7 +277,7 @@ async def new_submission(
         submission_comment = ""
 
     if user_token is None:
-        return {"response": "Invalid token"}
+        return {"response": "Invalid token. Please login."}
 
     todays_date = datetime.datetime.now()
     start_date = datetime.datetime.strptime(START_DATE, "%Y-%m-%d")
@@ -345,7 +345,7 @@ def update_team_name(
     new_team_name = body.new_team_name
 
     if user_token is None:
-        return {"success": False, "error": "Invalid token"}
+        return {"success": False, "error": "Invalid token. Please login."}
 
     if str(new_team_name).strip() == "":
         return {"success": False, "error": "Team name cannot be empty."}
