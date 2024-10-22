@@ -3,6 +3,8 @@ import os
 import threading
 import time
 
+from requests.exceptions import RequestException
+
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -302,10 +304,14 @@ async def new_submission(
         if competition_info.competition_type == "script":
             resp = sub.new_submission(user_token, hub_model, submission_comment)
             return {"response": f"Success! You have {resp} submissions remaining today."}
+    except RequestException:
+        return {"response": "Hugging Face Hub is unreachable, please try again later"}
     except AuthenticationError:
         return {"response": "Invalid token"}
     except PastDeadlineError:
-        return {"response": "Competition has ended."}
+        return {"response": "Competition has ended"}
+    except SubmissionError:
+        return {"response": "Invalid submission file"}
     except SubmissionLimitError:
         return {"response": "Submission limit reached"}
     return {"response": "Invalid competition type"}
