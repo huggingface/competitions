@@ -3,8 +3,6 @@ import os
 import threading
 import time
 
-from requests.exceptions import RequestException
-
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,9 +12,10 @@ from huggingface_hub.utils import disable_progress_bars
 from huggingface_hub.utils._errors import EntryNotFoundError
 from loguru import logger
 from pydantic import BaseModel
+from requests.exceptions import RequestException
 
 from competitions import __version__, utils
-from competitions.errors import AuthenticationError
+from competitions.errors import AuthenticationError, PastDeadlineError, SubmissionError, SubmissionLimitError
 from competitions.info import CompetitionInfo
 from competitions.leaderboard import Leaderboard
 from competitions.oauth import attach_oauth
