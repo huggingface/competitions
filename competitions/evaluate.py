@@ -14,6 +14,11 @@ from competitions.compute_metrics import compute_metrics
 from competitions.enums import SubmissionStatus
 from competitions.params import EvalParams
 
+os.makedirs("logs", exist_ok=True)
+
+# Configure logger to write logs to a file with rotation and retention.
+logger.add("/app/logs/evaluate.log", rotation="10 MB", retention="10 days", level="INFO")
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -27,7 +32,7 @@ def upload_submission_file(params, file_path):
 
 
 def generate_submission_file(params, conda_env = None):
-    logger.info("Downloading submission model")
+    logger.info("Downloading submission mode repo")
     submission_dir = snapshot_download(
         repo_id=params.submission_repo,
         local_dir=params.output_path,
@@ -38,7 +43,9 @@ def generate_submission_file(params, conda_env = None):
     # start a subprocess to run the script.py
     # the script.py will generate a submission.csv file in the submission_dir
     # push the submission.csv file to the repo using upload_submission_file
-    logger.info("Generating submission file")
+    logger.info("Downloaded submission mode repo")
+
+    logger.info("Running script.py")
 
     # invalidate USER_TOKEN env var
     os.environ["USER_TOKEN"] = ""
@@ -85,12 +92,20 @@ def generate_submission_file(params, conda_env = None):
     for sub_file in params.submission_filenames:
         logger.info(f"Uploading {sub_file} to the repository")
         sub_file_ext = sub_file.split(".")[-1]
-        api.upload_file(
-            path_or_fileobj=f"{submission_dir}/{sub_file}",
-            path_in_repo=f"submissions/{params.team_id}-{params.submission_id}.{sub_file_ext}",
-            repo_id=params.competition_id,
-            repo_type="dataset",
-        )
+        file_path = f"{submission_dir}/{sub_file}"
+        
+        try:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"File {file_path} does not exist.")
+            api.upload_file(
+                path_or_fileobj=file_path,
+                path_in_repo=f"submissions/{params.team_id}-{params.submission_id}.{sub_file_ext}",
+                repo_id=params.competition_id,
+                repo_type="dataset",
+            )
+            logger.info(f"Successfully uploaded {file_path}")
+        except Exception as e:
+            raise e
 
 
 @utils.monitor
@@ -102,15 +117,7 @@ def run(params):
     utils.update_submission_status(params, SubmissionStatus.PROCESSING.value)
 
     if params.competition_type == "script":
-        try:
-            requirements_fname = hf_hub_download(
-                repo_id=params.competition_id,
-                filename="requirements.txt",
-                token=params.token,
-                repo_type="dataset",
-            )
-        except EntryNotFoundError:
-            requirements_fname = None
+        
 
 
         try:

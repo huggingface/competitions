@@ -16,3 +16,4 @@ authlib
 itsdangerous
 hf-transfer
 datasets
+scikit-learn
