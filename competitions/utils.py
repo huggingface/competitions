@@ -274,7 +274,7 @@ def uninstall_requirements(requirements_fname):
         return
 
 
-def install_requirements(requirements_fname):
+def install_requirements(requirements_fname, conda_env = None):
     # check if params.project_name has a requirements.txt
     if os.path.exists(requirements_fname):
         # install the requirements using subprocess, wait for it to finish
@@ -292,14 +292,18 @@ def install_requirements(requirements_fname):
             for line in install_list:
                 f.write(line)
 
-        pipe = subprocess.Popen(
-            [
-                "pip",
-                "install",
-                "-r",
-                "install.txt",
-            ],
-        )
+        if conda_env is not None:
+            pipe = subprocess.Popen(
+                [
+                    "pip",
+                    "install",
+                    "-r",
+                    "install.txt",
+                ],
+            )
+        else:
+            command = f"conda run -p {conda_env} pip install -r install.txt".split(" ")
+            pipe = subprocess.Popen(command)
         pipe.wait()
         logger.info("Requirements installed.")
         return

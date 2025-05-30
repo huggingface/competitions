@@ -26,8 +26,8 @@ def upload_submission_file(params, file_path):
     pass
 
 
-def generate_submission_file(params):
-    logger.info("Downloading submission dataset")
+def generate_submission_file(params, conda_env = None):
+    logger.info("Downloading submission model")
     submission_dir = snapshot_download(
         repo_id=params.submission_repo,
         local_dir=params.output_path,
@@ -50,7 +50,12 @@ def generate_submission_file(params):
     os.chown(sandbox_path, os.getuid(), os.getgid())
 
     # Define your command
-    cmd = f"{sandbox_path} python script.py"
+
+    if conda_env:
+        cmd = f"{sandbox_path} conda run -p {conda_env} python script.py"
+    else:
+        cmd = f"{sandbox_path} python script.py"
+
     cmd = shlex.split(cmd)
 
     # Copy the current environment and modify it
@@ -107,11 +112,37 @@ def run(params):
         except EntryNotFoundError:
             requirements_fname = None
 
+
+        try:
+            requirements_fname = hf_hub_download(
+                repo_id=params.submission_repo,
+                filename="requirements.txt",
+                token=os.environ.get("USER_TOKEN"),
+                repo_type="model",
+            )
+            logger.info(f"found custom requirments.txt file in {params.submission_repo}")
+
+        except EntryNotFoundError:
+            logger.info(f"custom requirments.txt file not found in {params.submission_repo}")
+            try:
+                requirements_fname = hf_hub_download(
+                    repo_id=params.competition_id,
+                    filename="requirements.txt",
+                    token=params.token,
+                    repo_type="dataset",
+                )
+
+                logger.info(f"using a default requirments file instead")
+
+            except EntryNotFoundError:
+                requirements_fname = None  
+
         if requirements_fname:
             logger.info("Installing requirements")
-            utils.uninstall_requirements(requirements_fname)
-            utils.install_requirements(requirements_fname)
+            # utils.uninstall_requirements(requirements_fname)
+            utils.install_requirements(requirements_fname, conda_env=os.get("CONDA_ENV_MODEL","/app/model_default"))
         if len(str(params.dataset).strip()) > 0:
+            logger.info("downloading dataset.")
             # _ = Repository(local_dir="/tmp/data", clone_from=params.dataset, token=params.token)
             _ = snapshot_download(
                 repo_id=params.dataset,
@@ -119,7 +150,8 @@ def run(params):
                 token=params.token,
                 repo_type="dataset",
             )
-        generate_submission_file(params)
+            logger.info("downloaded dataset.")
+        generate_submission_file(params, conda_env=os.get("CONDA_ENV_MODEL","/app/model_default"))
 
     evaluation = compute_metrics(params)
 

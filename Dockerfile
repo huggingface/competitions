@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+FROM nvidia/cuda:12.6.2-cudnn-runtime-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=UTC \
@@ -58,15 +58,22 @@ ENV PYTHONPATH=$HOME/app \
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     && sh Miniconda3-latest-Linux-x86_64.sh -b -p /app/miniconda \
     && rm -f Miniconda3-latest-Linux-x86_64.sh
-ENV PATH /app/miniconda/bin:$PATH
 
-RUN conda create -p /app/env -y python=3.10
+ENV PATH=/app/miniconda/bin:$PATH
+ENV CONDA_ENV_MODEL=/app/model_default
+
+RUN conda create -p /app/env -y python=3.12
+RUN conda create -p ${CONDA_MODEL_PATH} -y python=3.12
 
 SHELL ["conda", "run","--no-capture-output", "-p","/app/env", "/bin/bash", "-c"]
 
-RUN conda install pytorch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 pytorch-cuda=12.1 -c pytorch -c nvidia && \
-    conda clean -ya && \
-    conda install -c "nvidia/label/cuda-12.1.0" cuda-nvcc && conda clean -ya
+# RUN conda install pytorch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 pytorch-cuda=12.1 -c pytorch -c nvidia && \
+#     conda clean -ya && \
+#     conda install -c "nvidia/label/cuda-12.1.0" cuda-nvcc && conda clean -ya
+
+RUN pip install -U pip
+COPY --chown=1000:1000 requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt
 
 COPY --chown=1000:1000 . /app/
 RUN make sandbox
@@ -76,9 +83,8 @@ RUN chmod +x /app/sandbox
 
 ENV PATH="/app:${PATH}"
 
-RUN pip install -U pip
 RUN pip install -e .
-RUN pip install -r requirements_docker.txt
+# RUN pip install -r requirements_docker.txt
 
 ARG COMP_IMAGE
 ENV COMP_IMAGE=$COMP_IMAGE 
