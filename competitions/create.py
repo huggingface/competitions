@@ -1,5 +1,6 @@
 import io
 import json
+import os
 
 import gradio as gr
 from huggingface_hub import HfApi
@@ -48,8 +49,13 @@ id,pred,split
 """
 SOLUTION_CSV = SOLUTION_CSV.strip()
 
-DOCKERFILE = """
-FROM huggingface/competitions:latest
+COMP_IMAGE = os.environ.get("COMP_IMAGE")
+
+if not COMP_IMAGE:
+    raise ValueError("specify COMP_IMAGE env variable")
+
+DOCKERFILE = f"""
+FROM {COMP_IMAGE}
 
 CMD uvicorn competitions.app:app --host 0.0.0.0 --port 7860 --workers 1
 """

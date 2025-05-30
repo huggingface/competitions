@@ -1,0 +1,7 @@
+services:
+  test:
+    image: $COMP_IMAGE
+    build:
+      args:
+        - COMP_IMAGE=$COMP_IMAGE
+    

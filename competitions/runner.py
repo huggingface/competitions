@@ -13,9 +13,13 @@ from competitions.enums import SubmissionStatus
 from competitions.info import CompetitionInfo
 from competitions.utils import run_evaluation
 
+COMP_IMAGE = os.environ.get("COMP_IMAGE")
 
-_DOCKERFILE = """
-FROM huggingface/competitions:latest
+if not COMP_IMAGE:
+    raise ValueError("specify COMP_IMAGE env variable")
+
+_DOCKERFILE = f"""
+FROM {COMP_IMAGE}
 
 CMD uvicorn competitions.api:api --port 7860 --host 0.0.0.0
 """

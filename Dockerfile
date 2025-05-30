@@ -79,3 +79,6 @@ ENV PATH="/app:${PATH}"
 RUN pip install -U pip
 RUN pip install -e .
 RUN pip install -r requirements_docker.txt
+
+ARG COMP_IMAGE
+ENV COMP_IMAGE=$COMP_IMAGE 

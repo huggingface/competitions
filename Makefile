@@ -1,3 +1,5 @@
+COMP_IMAGE ?= ghcr.io/stresearch/competitions:latest
+
 CFLAGS += -std=c99 -Wall -O2
 LDFLAGS += -lseccomp
 .PHONY: quality style test
@@ -12,9 +14,9 @@ style:
 	python -m isort .
 
 docker:
-	docker build -t competitions:latest .
-	docker tag competitions:latest huggingface/competitions:latest
-	docker push huggingface/competitions:latest
+	docker build --build-arg COMP_IMAGE=$(COMP_IMAGE) -t $(COMP_IMAGE) .
+	# docker tag competitions:latest $(COMP_IMAGE)
+	docker push $(COMP_IMAGE)
 
 test:
 	pytest -sv .

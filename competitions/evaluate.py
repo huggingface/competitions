@@ -6,7 +6,7 @@ import shutil
 import subprocess
 
 from huggingface_hub import HfApi, hf_hub_download, snapshot_download
-from huggingface_hub.utils._errors import EntryNotFoundError
+from huggingface_hub.utils import EntryNotFoundError
 from loguru import logger
 
 from competitions import utils

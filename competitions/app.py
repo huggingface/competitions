@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from huggingface_hub import hf_hub_download
 from huggingface_hub.utils import disable_progress_bars
-from huggingface_hub.utils._errors import EntryNotFoundError
+from huggingface_hub.utils import EntryNotFoundError
 from loguru import logger
 from pydantic import BaseModel
 from requests.exceptions import RequestException

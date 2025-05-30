@@ -148,3 +148,6 @@ dmypy.json
 
 # Alembic / database artifcats
 **.db
+
+
+scratch*
