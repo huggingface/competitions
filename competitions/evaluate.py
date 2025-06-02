@@ -134,7 +134,7 @@ def generate_submission_file(params, conda_env = None):
     logger.info("contents of submission_dir")
     logger.info(os.listdir(submission_dir))
 
-    utils.upload_submission_logs(params, log_file=LOG_FILE)
+    utils.upload_submission_logs(params, LOG_FILE)
 
 
     api = HfApi(token=params.token)
