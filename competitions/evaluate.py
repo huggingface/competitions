@@ -16,14 +16,13 @@ from competitions.compute_metrics import compute_metrics
 from competitions.enums import SubmissionStatus
 from competitions.params import EvalParams
 
-LOG_FILE="/app/logs/evaluate.log"
+#TODO figure how to avoid logging token file
+# LOG_FILE="/app/logs/evaluate.log"
 
-os.makedirs("logs", exist_ok=True)
+# os.makedirs("logs", exist_ok=True)
 
 # Configure logger to write logs to a file with rotation and retention.
-logger.add(LOG_FILE, rotation="10 MB", retention="10 days", level="INFO")
-
-
+# logger.add(LOG_FILE, rotation="10 MB", retention="10 days", level="INFO")
 
 
 def parse_args():
@@ -37,7 +36,7 @@ def upload_submission_file(params, file_path):
     pass
 
 
-def generate_submission_file(params, conda_env = None):
+def generate_submission_file(params, conda_env=None):
     logger.info("Downloading submission mode repo")
     submission_dir = snapshot_download(
         repo_id=params.submission_repo,
@@ -73,12 +72,15 @@ def generate_submission_file(params, conda_env = None):
 
     # Copy the current environment and modify it
     env = os.environ.copy()
+    env["PARAMS"] = ""
 
     # Start the subprocess
     stdout_log_path = os.path.join(submission_dir, "stdout.log")
     stderr_log_path = os.path.join(submission_dir, "stderr.log")
 
-    with open(stdout_log_path, "w") as stdout_log, open(stderr_log_path, "w") as stderr_log:
+    with open(stdout_log_path, "w") as stdout_log, open(
+        stderr_log_path, "w"
+    ) as stderr_log:
         process = subprocess.Popen(
             cmd,
             cwd=submission_dir,
@@ -96,8 +98,12 @@ def generate_submission_file(params, conda_env = None):
                     dest.flush()
 
         threads = [
-            threading.Thread(target=stream_copy, args=(process.stdout, sys.stdout, stdout_log)),
-            threading.Thread(target=stream_copy, args=(process.stderr, sys.stderr, stderr_log)),
+            threading.Thread(
+                target=stream_copy, args=(process.stdout, sys.stdout, stdout_log)
+            ),
+            threading.Thread(
+                target=stream_copy, args=(process.stderr, sys.stderr, stderr_log)
+            ),
         ]
         for t in threads:
             t.start()
@@ -105,17 +111,26 @@ def generate_submission_file(params, conda_env = None):
         try:
             process.wait(timeout=params.time_limit)
         except subprocess.TimeoutExpired:
-            logger.info(f"Process exceeded {params.time_limit} seconds time limit. Terminating...")
+            logger.info(
+                f"Process exceeded {params.time_limit} seconds time limit. Terminating..."
+            )
             process.kill()
             process.wait()
         for t in threads:
             t.join()
 
+    LOG_FILE = "submission.log"
+
     # After process ends, log the captured stdout and stderr
-    with open(stdout_log_path, "r") as f:
-        logger.info(f"Submission STDOUT:\n{f.read()}")
-    with open(stderr_log_path, "r") as f:
-        logger.info(f"Submission STDERR:\n{f.read()}")
+
+    with open(LOG_FILE, "w") as log_file, open(stdout_log_path) as stdout_log, open(
+        stderr_log_path
+    ) as stderr_log:
+        log_file.write(f"Submission STDOUT:\n{stdout_log.read()}\n")
+        log_file.write(f"Submission STDERR:\n{stderr_log.read()}\n")
+
+    utils.upload_submission_logs(params, LOG_FILE)
+
 
     # # Wait for the process to complete or timeout
     # try:
@@ -134,15 +149,13 @@ def generate_submission_file(params, conda_env = None):
     logger.info("contents of submission_dir")
     logger.info(os.listdir(submission_dir))
 
-    utils.upload_submission_logs(params, LOG_FILE)
-
 
     api = HfApi(token=params.token)
     for sub_file in params.submission_filenames:
         logger.info(f"Uploading {sub_file} to the repository")
         sub_file_ext = sub_file.split(".")[-1]
         file_path = f"{submission_dir}/{sub_file}"
-        
+
         try:
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"File {file_path} does not exist.")
@@ -166,8 +179,6 @@ def run(params):
     utils.update_submission_status(params, SubmissionStatus.PROCESSING.value)
 
     if params.competition_type == "script":
-        
-
 
         try:
             requirements_fname = hf_hub_download(
@@ -176,10 +187,14 @@ def run(params):
                 token=os.environ.get("USER_TOKEN"),
                 repo_type="model",
             )
-            logger.info(f"found custom requirments.txt file in {params.submission_repo}")
+            logger.info(
+                f"found custom requirments.txt file in {params.submission_repo}"
+            )
 
         except EntryNotFoundError:
-            logger.info(f"custom requirments.txt file not found in {params.submission_repo}")
+            logger.info(
+                f"custom requirments.txt file not found in {params.submission_repo}"
+            )
             try:
                 requirements_fname = hf_hub_download(
                     repo_id=params.competition_id,
@@ -191,12 +206,15 @@ def run(params):
                 logger.info(f"using a default requirments file instead")
 
             except EntryNotFoundError:
-                requirements_fname = None  
+                requirements_fname = None
 
         if requirements_fname:
             logger.info("Installing requirements")
             # utils.uninstall_requirements(requirements_fname)
-            utils.install_requirements(requirements_fname, conda_env=os.environ.get("CONDA_ENV_MODEL","/app/model_default"))
+            utils.install_requirements(
+                requirements_fname,
+                conda_env=os.environ.get("CONDA_ENV_MODEL", "/app/model_default"),
+            )
         if len(str(params.dataset).strip()) > 0:
             logger.info("downloading dataset.")
             # _ = Repository(local_dir="/tmp/data", clone_from=params.dataset, token=params.token)
@@ -207,13 +225,17 @@ def run(params):
                 repo_type="dataset",
             )
             logger.info("downloaded dataset.")
-        generate_submission_file(params, conda_env=os.environ.get("CONDA_ENV_MODEL","/app/model_default"))
+        generate_submission_file(
+            params, conda_env=os.environ.get("CONDA_ENV_MODEL", "/app/model_default")
+        )
 
     evaluation = compute_metrics(params)
 
-    utils.update_submission_score(params, evaluation["public_score"], evaluation["private_score"])
+    utils.update_submission_score(
+        params, evaluation["public_score"], evaluation["private_score"]
+    )
     utils.update_submission_status(params, SubmissionStatus.SUCCESS.value)
-    utils.upload_submission_logs(params, log_file=LOG_FILE)
+    # utils.upload_submission_logs(params, log_file=LOG_FILE)
     utils.delete_space(params)
 
 

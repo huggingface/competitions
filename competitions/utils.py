@@ -242,10 +242,9 @@ def monitor(func):
             logger.error(str(e))
             update_submission_status(params, SubmissionStatus.FAILED.value)
 
-            LOG_FILE="/app/logs/evaluate.log"
-
-            if os.path.exists(LOG_FILE):
-                upload_submission_logs(params, LOG_FILE)
+            # LOG_FILE="/app/logs/evaluate.log"
+            # if os.path.exists(LOG_FILE):
+            #     upload_submission_logs(params, LOG_FILE)
 
             pause_space(params)
 
