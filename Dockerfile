@@ -63,7 +63,7 @@ ENV PATH=/app/miniconda/bin:$PATH
 ENV CONDA_ENV_MODEL=/app/model_default
 
 RUN conda create -p /app/env -y python=3.12
-RUN conda create -p ${CONDA_MODEL_PATH} -y python=3.12
+RUN conda create -p ${CONDA_ENV_MODEL} -y python=3.12
 
 SHELL ["conda", "run","--no-capture-output", "-p","/app/env", "/bin/bash", "-c"]
 

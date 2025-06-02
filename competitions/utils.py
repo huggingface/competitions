@@ -388,3 +388,15 @@ def update_team_name(user_token, new_team_name, competition_id, hf_token):
         repo_type="dataset",
     )
     return new_team_name
+
+
+def upload_submission_logs(params,log_file):
+    api = HfApi(token=params.token)
+    file_path = log_file
+    api.upload_file(
+                path_or_fileobj=file_path,
+                path_in_repo=f"submissions-logs/{params.team_id}-{params.submission_id}.log",
+                repo_id=params.competition_id,
+                repo_type="dataset",
+            )
+    logger.info(f"Successfully uploaded log {file_path}")

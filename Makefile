@@ -1,4 +1,4 @@
-COMP_IMAGE ?= ghcr.io/stresearch/competitions:v2
+COMP_IMAGE ?= ghcr.io/stresearch/competitions:latest
 
 CFLAGS += -std=c99 -Wall -O2
 LDFLAGS += -lseccomp
