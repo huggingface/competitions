@@ -297,7 +297,7 @@ def install_requirements(requirements_fname, conda_env = None):
             for line in install_list:
                 f.write(line)
 
-        if conda_env is not None:
+        if conda_env is None:
             pipe = subprocess.Popen(
                 [
                     "pip",
