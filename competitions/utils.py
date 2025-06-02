@@ -243,7 +243,7 @@ def monitor(func):
             update_submission_status(params, SubmissionStatus.FAILED.value)
 
             LOG_FILE="/app/logs/evaluate.log"
-            
+
             if os.path.exists(LOG_FILE):
                 upload_submission_logs(params, LOG_FILE)
 
@@ -396,13 +396,16 @@ def update_team_name(user_token, new_team_name, competition_id, hf_token):
     return new_team_name
 
 
-def upload_submission_logs(params,log_file):
-    api = HfApi(token=params.token)
-    file_path = log_file
-    api.upload_file(
-                path_or_fileobj=file_path,
-                path_in_repo=f"submission_logs/{params.team_id}-{params.submission_id}.log",
-                repo_id=params.competition_id,
-                repo_type="dataset",
-            )
-    logger.info(f"Successfully uploaded log {file_path}")
+def upload_submission_logs(params,file_path):
+    try: 
+        api = HfApi(token=params.token)
+        api.upload_file(
+                    path_or_fileobj=file_path,
+                    path_in_repo=f"submission_logs/{params.team_id}-{params.submission_id}.log",
+                    repo_id=params.competition_id,
+                    repo_type="dataset",
+                )
+        logger.info(f"Successfully uploaded log {file_path}")
+    except Exception as e:
+        logger.exception("error uploading log file")
+        logger.exception(e)
