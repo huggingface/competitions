@@ -196,7 +196,7 @@ def run(params):
         if requirements_fname:
             logger.info("Installing requirements")
             # utils.uninstall_requirements(requirements_fname)
-            utils.install_requirements(requirements_fname, conda_env=os.get("CONDA_ENV_MODEL","/app/model_default"))
+            utils.install_requirements(requirements_fname, conda_env=os.environ.get("CONDA_ENV_MODEL","/app/model_default"))
         if len(str(params.dataset).strip()) > 0:
             logger.info("downloading dataset.")
             # _ = Repository(local_dir="/tmp/data", clone_from=params.dataset, token=params.token)
@@ -207,7 +207,7 @@ def run(params):
                 repo_type="dataset",
             )
             logger.info("downloaded dataset.")
-        generate_submission_file(params, conda_env=os.get("CONDA_ENV_MODEL","/app/model_default"))
+        generate_submission_file(params, conda_env=os.environ.get("CONDA_ENV_MODEL","/app/model_default"))
 
     evaluation = compute_metrics(params)
 
