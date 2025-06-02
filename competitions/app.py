@@ -33,20 +33,20 @@ DISABLE_PUBLIC_LB = int(os.environ.get("DISABLE_PUBLIC_LB", 0))
 
 disable_progress_bars()
 
-try:
-    REQUIREMENTS_FNAME = hf_hub_download(
-        repo_id=COMPETITION_ID,
-        filename="requirements.txt",
-        token=HF_TOKEN,
-        repo_type="dataset",
-    )
-except EntryNotFoundError:
-    REQUIREMENTS_FNAME = None
+# try:
+#     REQUIREMENTS_FNAME = hf_hub_download(
+#         repo_id=COMPETITION_ID,
+#         filename="requirements.txt",
+#         token=HF_TOKEN,
+#         repo_type="dataset",
+#     )
+# except EntryNotFoundError:
+#     REQUIREMENTS_FNAME = None
 
-if REQUIREMENTS_FNAME:
-    logger.info("Uninstalling and installing requirements")
-    utils.uninstall_requirements(REQUIREMENTS_FNAME)
-    utils.install_requirements(REQUIREMENTS_FNAME)
+# if REQUIREMENTS_FNAME:
+#     logger.info("Uninstalling and installing requirements")
+#     utils.uninstall_requirements(REQUIREMENTS_FNAME)
+#     utils.install_requirements(REQUIREMENTS_FNAME)
 
 
 class LeaderboardRequest(BaseModel):
