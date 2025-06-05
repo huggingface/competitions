@@ -15,5 +15,6 @@ gradio
 authlib
 itsdangerous
 hf-transfer
+hf_xet
 datasets
 scikit-learn

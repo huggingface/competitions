@@ -310,6 +310,7 @@ def install_requirements(requirements_fname, conda_env = None):
             command = f"conda run -p {conda_env} pip install -r install.txt".split(" ")
             pipe = subprocess.Popen(command)
         pipe.wait()
+        #TODO kill this process after X
         logger.info("Requirements installed.")
         return
     logger.info("No requirements.txt found. Skipping requirements installation.")
