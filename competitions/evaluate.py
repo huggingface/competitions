@@ -64,7 +64,7 @@ def generate_submission_file(params, conda_env=None):
     # Define your command
 
     if conda_env:
-        cmd = f"{sandbox_path} conda run -p {conda_env} python script.py"
+        cmd = f"{sandbox_path} conda run -p {conda_env} --no-capture-output python script.py"
     else:
         cmd = f"{sandbox_path} python script.py"
 

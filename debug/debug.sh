@@ -12,13 +12,13 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 cd /app/debug
 
 echo "downloading dataset"
-conda run -p /app/env python download_dataset.py
+conda run -p /app/env --no-capture-output python download_dataset.py
 
 echo "downloading model"
-conda run -p /app/env python download_model.py
+conda run -p /app/env --no-capture-output python download_model.py
 
 echo "installing requirments"
-conda run -p $CONDA_ENV_MODEL pip install -r $MODEL_PATH/requirements.txt
+conda run -p $CONDA_ENV_MODEL --no-capture-output pip install -r $MODEL_PATH/requirements.txt
 
 
 echo -e "disabling network"
@@ -29,7 +29,7 @@ chown $UID:$(id -g) $MODEL_PATH/sandbox
 cd $MODEL_PATH 
 echo "running script.py"
 cd $MODEL_PATH
-sandbox conda run -p $CONDA_ENV_MODEL python script.py
+sandbox conda run -p $CONDA_ENV_MODEL --no-capture-output python script.py
 
 echo "output file"
 cat "submission.csv"
@@ -37,6 +37,6 @@ cat "submission.csv"
 
 cd /app/debug
 echo "evaluating"
-conda run -p /app/env python eval.py
+conda run -p /app/env --no-capture-output python eval.py
 
 

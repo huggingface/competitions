@@ -32,6 +32,7 @@ RUN apt-get update &&  \
     unzip \
     openjdk-11-jre-headless \
     libseccomp-dev \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/* && \
     apt-get clean
 

@@ -307,7 +307,7 @@ def install_requirements(requirements_fname, conda_env = None):
                 ],
             )
         else:
-            command = f"conda run -p {conda_env} pip install -r install.txt".split(" ")
+            command = f"conda run -p {conda_env} --no-capture-output pip install -r install.txt".split(" ")
             pipe = subprocess.Popen(command)
         pipe.wait()
         #TODO kill this process after X
