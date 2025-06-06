@@ -12,13 +12,13 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 cd /app/debug
 
 echo "downloading dataset"
-python download_dataset.py
+conda run -p /app/env python download_dataset.py
 
 echo "downloading model"
-python download_model.py
+conda run -p /app/env python download_model.py
 
 echo "installing requirments"
-python conda run -p $CONDA_ENV_MODEL pip install -r $MODEL_PATH/requirements.txt
+conda run -p $CONDA_ENV_MODEL pip install -r $MODEL_PATH/requirements.txt
 
 
 echo -e "disabling network"
@@ -37,6 +37,6 @@ cat "submission.csv"
 
 cd /app/debug
 echo "evaluating"
-python eval.py
+conda run -p /app/env python eval.py
 
 
