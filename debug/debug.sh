@@ -34,3 +34,9 @@ sandbox conda run -p $CONDA_ENV_MODEL python script.py
 echo "output file"
 cat "submission.csv"
 
+
+cd /app/debug
+echo "evaluating"
+python eval.py
+
+
