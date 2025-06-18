@@ -279,7 +279,7 @@ def uninstall_requirements(requirements_fname):
         return
 
 
-def install_requirements(requirements_fname, conda_env = None):
+def install_requirements(requirements_fname, conda_env=None):
     # check if params.project_name has a requirements.txt
     if os.path.exists(requirements_fname):
         # install the requirements using subprocess, wait for it to finish
@@ -298,20 +298,16 @@ def install_requirements(requirements_fname, conda_env = None):
                 f.write(line)
 
         if conda_env is None:
-            pipe = subprocess.Popen(
-                [
-                    "pip",
-                    "install",
-                    "-r",
-                    "install.txt",
-                ],
-            )
+            command = "pip install -r install.txt".split(" ")
         else:
             command = f"conda run -p {conda_env} --no-capture-output pip install -r install.txt".split(" ")
+        try:
             pipe = subprocess.Popen(command)
-        pipe.wait()
-        #TODO kill this process after X
-        logger.info("Requirements installed.")
+            pipe.wait(timeout=600)  ## Wait 10 minutes
+            logger.info("Requirements installed.")
+        except subprocess.TimeoutExpired:
+            pipe.kill()
+            logger.info("[ERROR] Requirements installation failed due to timeout.")
         return
     logger.info("No requirements.txt found. Skipping requirements installation.")
     return
@@ -396,15 +392,15 @@ def update_team_name(user_token, new_team_name, competition_id, hf_token):
     return new_team_name
 
 
-def upload_submission_logs(params,file_path):
-    try: 
+def upload_submission_logs(params, file_path):
+    try:
         api = HfApi(token=params.token)
         api.upload_file(
-                    path_or_fileobj=file_path,
-                    path_in_repo=f"submission_logs/{params.team_id}-{params.submission_id}.log",
-                    repo_id=params.competition_id,
-                    repo_type="dataset",
-                )
+            path_or_fileobj=file_path,
+            path_in_repo=f"submission_logs/{params.team_id}-{params.submission_id}.log",
+            repo_id=params.competition_id,
+            repo_type="dataset",
+        )
         logger.info(f"Successfully uploaded log {file_path}")
     except Exception as e:
         logger.exception("error uploading log file")
