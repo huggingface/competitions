@@ -314,7 +314,7 @@ def main():
             with gr.Row():
                 submission_id_column = gr.Textbox(label="Submission id column", lines=1, value="id")
                 submission_columns = gr.Textbox(label="Submission columns", lines=1, value="id,pred")
-                submission_rows = gr.Textbox(label="Submission total rows (exclusing header)", lines=1, value="10000")
+                submission_rows = gr.Textbox(label="Submission total rows (excluding header)", lines=1, value="10000")
 
         output_md = gr.Markdown("Click the button below to create the competition")
         create_competition = gr.Button(value="Create competition")
