@@ -815,9 +815,11 @@
             var submissionComment = document.getElementById('submission_comment').value;
             formData.append('submission_comment', submissionComment);
 
-            fetch('/new_submission', {
-                method: 'POST',
-                body: formData
+            const __sign = new URLSearchParams(window.location.search).get('__sign');
+            fetch('/new_submission' + (__sign ? '?__sign=' + __sign : ''), {
+               method: 'POST',
+               credentials: 'include',
+               body: formData
             })
                 .then(response => response.json())
                 .then(data => {
