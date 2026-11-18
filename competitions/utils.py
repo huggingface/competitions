@@ -223,7 +223,7 @@ def update_submission_score(params, public_score, private_score):
         if submission["submission_id"] == params.submission_id:
             submission["public_score"] = public_score
             submission["private_score"] = private_score
-            submission["status"] = "done"
+            submission["status"] = SubmissionStatus.SUCCESS.value
             break
     upload_submission_info(params, user_submission_info)
 
